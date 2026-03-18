@@ -1,0 +1,47 @@
+# Versión Alexa Hosted (privada — keys hardcodeadas, solo uso local)
+alexa-hosted-version/
+
+# Dependencies
+node_modules/
+lambda/node_modules/
+
+# Secretos: NUNCA subir al repositorio
+.env
+lambda/.env
+alexa-hosted-version/.env
+**/.env
+.env.*
+*.env.local
+
+# Deploy artifacts
+lambda_deploy.zip
+*.zip
+build.zip
+
+# ASK CLI internal state (contiene skill IDs sensibles)
+.ask/ask-states.json
+
+# Logs y temporales
+*.log
+coverage/
+dist/
+tmp/
+*.tmp
+out-*.json
+response-*.json
+lambda/response-*.json
+lambda/out-*.json
+
+# Test outputs
+tests/response-*.json
+tests/out-*.json
+scripts/response_*.json
+scripts/bedrock-*-response.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/launch.json
+.idea/

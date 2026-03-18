@@ -1,0 +1,790 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "profesor universal",
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": [
+            "cancela",
+            "cancelar",
+            "para",
+            "detente",
+            "no importa",
+            "olvídalo",
+            "déjalo"
+          ]
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": [
+            "salir",
+            "cerrar",
+            "terminar",
+            "adiós",
+            "hasta luego",
+            "chao",
+            "bye"
+          ]
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": [
+            "ir al inicio",
+            "volver al inicio",
+            "pantalla principal",
+            "inicio"
+          ]
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": [
+            "ayuda",
+            "ayúdame",
+            "qué puedes hacer",
+            "cómo funcionas",
+            "qué sabes hacer",
+            "para qué sirves",
+            "qué puedo preguntarte",
+            "cómo te uso",
+            "instrucciones",
+            "qué tipos de preguntas puedo hacer",
+            "qué temas sabes",
+            "qué materias conoces",
+            "cómo funciona esto",
+            "no sé cómo usarte",
+            "explícame cómo funciona la aplicación"
+          ]
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": [
+            "no entendí",
+            "qué dijiste",
+            "eso no",
+            "no es eso",
+            "no te entendí"
+          ]
+        },
+        {
+          "name": "AskProfeIntent",
+          "slots": [
+            {
+              "name": "question",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "qué es {question}",
+            "qué son {question}",
+            "qué fue {question}",
+            "qué era {question}",
+            "qué significa {question}",
+            "qué significan {question}",
+            "qué hay sobre {question}",
+            "qué hay de {question}",
+            "qué sabes de {question}",
+            "qué sabes sobre {question}",
+            "qué me puedes decir de {question}",
+            "qué me puedes decir sobre {question}",
+            "qué pasó con {question}",
+            "qué pasó en {question}",
+            "qué tiene {question}",
+            "qué contiene {question}",
+            "qué produce {question}",
+            "qué causa {question}",
+            "qué provoca {question}",
+            "qué implica {question}",
+            "qué incluye {question}",
+            "qué necesita {question}",
+            "qué requiere {question}",
+            "qué representa {question}",
+            "qué estudia {question}",
+            "qué investiga {question}",
+            "quién es {question}",
+            "quién fue {question}",
+            "quién era {question}",
+            "quiénes son {question}",
+            "quiénes fueron {question}",
+            "quién inventó {question}",
+            "quién descubrió {question}",
+            "quién escribió {question}",
+            "quién ganó {question}",
+            "quién gobierna {question}",
+            "quién creó {question}",
+            "quién fundó {question}",
+            "quién dirige {question}",
+            "quién manda en {question}",
+            "cómo funciona {question}",
+            "cómo es {question}",
+            "cómo se llama {question}",
+            "cómo se hace {question}",
+            "cómo se forma {question}",
+            "cómo se produce {question}",
+            "cómo nació {question}",
+            "cómo se calcula {question}",
+            "cómo se mide {question}",
+            "cómo se clasifica {question}",
+            "cómo se divide {question}",
+            "cómo se origina {question}",
+            "cómo surgió {question}",
+            "cómo ocurrió {question}",
+            "cómo afecta {question}",
+            "cómo influye {question}",
+            "cómo se relaciona {question}",
+            "cuál es {question}",
+            "cuál era {question}",
+            "cuáles son {question}",
+            "cuáles fueron {question}",
+            "cuál es el origen de {question}",
+            "cuál es la historia de {question}",
+            "cuál es el significado de {question}",
+            "cuál es el valor de {question}",
+            "cuál es el peso de {question}",
+            "cuál es la población de {question}",
+            "cuál es la extensión de {question}",
+            "cuál es el área de {question}",
+            "cuál es la capital de {question}",
+            "cuál es la distancia de {question}",
+            "cuál es la temperatura de {question}",
+            "cuál es la velocidad de {question}",
+            "cuál es la diferencia entre {question}",
+            "cuál es la fórmula de {question}",
+            "cuál es el tamaño de {question}",
+            "cuál es la masa de {question}",
+            "cuál es el presidente de {question}",
+            "cuál es la causa de {question}",
+            "cuál es el efecto de {question}",
+            "cuál es la función de {question}",
+            "cuál es la importancia de {question}",
+            "cuál es la definición de {question}",
+            "cuándo fue {question}",
+            "cuándo ocurrió {question}",
+            "cuándo nació {question}",
+            "cuándo murió {question}",
+            "cuándo se descubrió {question}",
+            "cuándo se inventó {question}",
+            "cuándo empezó {question}",
+            "cuándo terminó {question}",
+            "cuándo fue fundado {question}",
+            "cuándo se creó {question}",
+            "cuándo sucedió {question}",
+            "dónde está {question}",
+            "dónde queda {question}",
+            "dónde nació {question}",
+            "dónde ocurrió {question}",
+            "dónde se encuentra {question}",
+            "dónde se originó {question}",
+            "dónde fue {question}",
+            "dónde vive {question}",
+            "dónde vivió {question}",
+            "para qué sirve {question}",
+            "para qué es {question}",
+            "para qué se usa {question}",
+            "para qué se utiliza {question}",
+            "cuánto es {question}",
+            "cuántos son {question}",
+            "cuánto mide {question}",
+            "cuánto pesa {question}",
+            "cuánto vale {question}",
+            "cuánto cuesta {question}",
+            "cuánto tarda {question}",
+            "cuánto dura {question}",
+            "cuánto tiempo {question}",
+            "cuántos habitantes tiene {question}",
+            "cuántos años tiene {question}",
+            "cuántos años tenía {question}",
+            "cuántos kilómetros tiene {question}",
+            "cuántos países tiene {question}",
+            "cuántas especies hay de {question}",
+            "cuántas lunas tiene {question}",
+            "por qué {question}",
+            "por qué es {question}",
+            "por qué ocurre {question}",
+            "por qué se llama {question}",
+            "por qué existe {question}",
+            "por qué es importante {question}",
+            "por qué se usa {question}",
+            "por qué fue {question}",
+            "dime sobre {question}",
+            "dime {question}",
+            "dime algo sobre {question}",
+            "dime algo de {question}",
+            "dime más sobre {question}",
+            "dime la fórmula de {question}",
+            "háblame de {question}",
+            "háblame sobre {question}",
+            "explícame {question}",
+            "explícame qué es {question}",
+            "explícame cómo funciona {question}",
+            "explícame sobre {question}",
+            "explícame la diferencia entre {question}",
+            "enséñame {question}",
+            "enséñame sobre {question}",
+            "enséñame acerca de {question}",
+            "muéstrame {question}",
+            "muéstrame información sobre {question}",
+            "quiero saber {question}",
+            "quiero saber sobre {question}",
+            "quiero saber qué es {question}",
+            "quiero saber quién es {question}",
+            "quiero saber cómo funciona {question}",
+            "quiero saber cuánto es {question}",
+            "quiero aprender {question}",
+            "quiero aprender sobre {question}",
+            "quiero aprender acerca de {question}",
+            "quiero estudiar {question}",
+            "quiero entender {question}",
+            "quiero conocer {question}",
+            "quiero conocer sobre {question}",
+            "vamos a estudiar {question}",
+            "cuéntame sobre {question}",
+            "cuéntame {question}",
+            "cuéntame algo de {question}",
+            "cuéntame algo sobre {question}",
+            "cuéntame la historia de {question}",
+            "busca {question}",
+            "busca información sobre {question}",
+            "busca datos de {question}",
+            "investiga {question}",
+            "investiga sobre {question}",
+            "sobre {question}",
+            "acerca de {question}",
+            "información sobre {question}",
+            "información de {question}",
+            "datos sobre {question}",
+            "datos de {question}",
+            "tema {question}",
+            "profesor {question}",
+            "profe {question}",
+            "profe qué es {question}",
+            "profe quién es {question}",
+            "profe cuánto es {question}",
+            "profe explícame {question}",
+            "profe háblame de {question}",
+            "profe dime sobre {question}",
+            "resuelve {question}",
+            "calcula {question}",
+            "convierte {question}",
+            "grafica {question}",
+            "compara {question}",
+            "compara a {question}",
+            "compáralo con {question}",
+            "compara {question} con",
+            "ordena {question}",
+            "en dónde {question}",
+            "en cuál {question}",
+            "en qué año {question}",
+            "en qué país {question}",
+            "en qué ciudad {question}",
+            "en qué continente {question}",
+            "en qué consiste {question}",
+            "en qué se basa {question}",
+            "en qué época {question}",
+            "de qué trata {question}",
+            "de qué está hecho {question}",
+            "de qué se compone {question}",
+            "de dónde viene {question}",
+            "de dónde es {question}",
+            "de dónde proviene {question}",
+            "a qué se dedica {question}",
+            "a qué distancia está {question}",
+            "a qué pertenece {question}",
+            "qué diferencia hay entre {question}",
+            "y {question}",
+            "y qué es {question}",
+            "y quién es {question}",
+            "y cuánto {question}",
+            "y cuál {question}",
+            "y cómo {question}",
+            "y por qué {question}",
+            "y para qué {question}",
+            "y dónde {question}",
+            "y cuándo {question}",
+            "y cuántos {question}",
+            "y cuánto mide {question}",
+            "y cuánto pesa {question}",
+            "y cuántos años {question}",
+            "y qué pasó con {question}",
+            "y qué hay de {question}",
+            "puedes explicar {question}",
+            "puedes explicarme {question}",
+            "puedes decirme {question}",
+            "puedes decirme sobre {question}",
+            "puedes hablarme de {question}",
+            "puedes contarme sobre {question}",
+            "me puedes explicar {question}",
+            "me puedes decir {question}",
+            "me puedes hablar de {question}",
+            "me puedes contar sobre {question}",
+            "me interesa {question}",
+            "me interesa saber {question}",
+            "me interesa saber sobre {question}",
+            "necesito saber {question}",
+            "necesito información sobre {question}",
+            "necesito entender {question}",
+            "tengo una pregunta sobre {question}",
+            "tengo curiosidad sobre {question}",
+            "tengo curiosidad por {question}",
+            "pregunta sobre {question}",
+            "pregúntale sobre {question}",
+            "cuéntame un dato sobre {question}",
+            "dame un dato sobre {question}",
+            "dame información sobre {question}",
+            "dame un resumen de {question}",
+            "dame detalles de {question}",
+            "dame ejemplos de {question}",
+            "dame la definición de {question}",
+            "dime un hecho sobre {question}",
+            "dime un dato curioso de {question}",
+            "dime la historia de {question}",
+            "dime cómo funciona {question}",
+            "dime cuánto es {question}",
+            "dime quién fue {question}",
+            "dime qué es {question}",
+            "dime cuándo fue {question}",
+            "dime dónde está {question}",
+            "dime por qué {question}",
+            "dime cuál es {question}"
+          ]
+        },
+        {
+          "name": "WolframAlphaModeIntent",
+          "slots": [
+            {
+              "name": "query",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "modo wolfram {query}",
+            "wolfram {query}",
+            "activa modo wolfram {query}",
+            "paso a paso {query}",
+            "resuelve paso a paso {query}",
+            "solución paso a paso {query}",
+            "cómo se resuelve {query}",
+            "cómo se resuelve paso a paso {query}",
+            "muéstrame los pasos de {query}",
+            "explica paso a paso {query}",
+            "explícame paso a paso {query}",
+            "procedimiento de {query}",
+            "pasos para resolver {query}",
+            "dame los pasos de {query}",
+            "resolver paso a paso {query}",
+            "ver solución paso a paso {query}",
+            "resuelve con pasos {query}",
+            "muéstrame cómo resolver {query}",
+            "cómo resuelvo {query}",
+            "ayúdame a resolver {query}",
+            "quiero ver los pasos de {query}",
+            "explícame el procedimiento de {query}",
+            "desarrolla {query}",
+            "desarrolla paso a paso {query}",
+            "demuestra {query}",
+            "demuéstrame {query}",
+            "calcula paso a paso {query}",
+            "integra {query}",
+            "deriva {query}",
+            "factoriza {query}",
+            "simplifica {query}",
+            "grafica {query} paso a paso"
+          ]
+        },
+        {
+          "name": "ContinueWolframIntent",
+          "samples": [
+            "continúa",
+            "siguiente",
+            "siguiente paso",
+            "más pasos",
+            "ver más",
+            "avanza",
+            "sigue",
+            "continuar",
+            "muestra los siguientes",
+            "ver siguientes pasos",
+            "muéstrame más",
+            "quiero ver más pasos",
+            "el siguiente",
+            "qué sigue",
+            "qué viene después",
+            "y después",
+            "y luego",
+            "paso siguiente",
+            "continúa con los pasos",
+            "muéstrame el siguiente paso",
+            "dame el siguiente paso",
+            "sigue con la solución",
+            "más",
+            "adelante"
+          ]
+        },
+        {
+          "name": "SkipToResultIntent",
+          "samples": [
+            "ir al resultado",
+            "ir al final",
+            "muéstrame el resultado",
+            "muéstrame el resultado final",
+            "salta al resultado",
+            "salta al final",
+            "quiero ver el resultado",
+            "dame el resultado",
+            "resultado final",
+            "ver resultado",
+            "ver el resultado final",
+            "ir directo al resultado",
+            "directo al resultado",
+            "omitir pasos",
+            "saltarse los pasos",
+            "solo el resultado",
+            "resultado",
+            "respuesta final",
+            "cuál es el resultado",
+            "cuál es la respuesta"
+          ]
+        },
+        {
+          "name": "RepeatLastQuestionIntent",
+          "samples": [
+            "repite mi última pregunta",
+            "repite la última pregunta",
+            "cuál fue mi última pregunta",
+            "qué pregunté antes",
+            "repite lo anterior",
+            "qué dije antes",
+            "repite la pregunta anterior",
+            "vuelve a la pregunta anterior",
+            "repite eso",
+            "repítelo",
+            "dilo de nuevo",
+            "otra vez",
+            "de nuevo",
+            "no escuché",
+            "no te oí",
+            "más despacio",
+            "repite por favor",
+            "puedes repetir",
+            "puedes repetirlo",
+            "qué dijiste",
+            "no entendí",
+            "repite la respuesta",
+            "vuelve a decirlo"
+          ]
+        },
+        {
+          "name": "DarkModeIntent",
+          "slots": [
+            {
+              "name": "visualMode",
+              "type": "VISUAL_MODE"
+            }
+          ],
+          "samples": [
+            "{visualMode}",
+            "modo {visualMode}",
+            "activa modo {visualMode}",
+            "pon modo {visualMode}",
+            "cambia a modo {visualMode}",
+            "quiero modo {visualMode}",
+            "pantalla {visualMode}",
+            "fondo {visualMode}",
+            "tema {visualMode}",
+            "pon la pantalla {visualMode}"
+          ]
+        },
+        {
+          "name": "WhisperModeIntent",
+          "slots": [
+            {
+              "name": "whisperMode",
+              "type": "WHISPER_MODE"
+            }
+          ],
+          "samples": [
+            "modo susurro",
+            "susurra",
+            "habla bajito",
+            "habla más bajo",
+            "habla bajo",
+            "habla normal",
+            "voz normal",
+            "activa modo susurro",
+            "activar susurro",
+            "desactiva susurro",
+            "deja de susurrar",
+            "modo silencioso",
+            "modo normal de voz",
+            "cambia a modo susurro",
+            "pon modo susurro",
+            "quiero modo susurro",
+            "quiero voz normal",
+            "habla en susurro",
+            "habla {whisperMode}",
+            "voz {whisperMode}",
+            "pon voz {whisperMode}",
+            "baja el volumen de tu voz",
+            "habla más suave",
+            "habla suave",
+            "voz suave",
+            "voz baja"
+          ]
+        },
+        {
+          "name": "VerMasImagenesIntent",
+          "samples": [
+            "ver más imágenes",
+            "más imágenes",
+            "ver más fotos",
+            "más fotos",
+            "siguiente imagen",
+            "siguientes imágenes",
+            "muéstrame más imágenes",
+            "quiero ver más imágenes",
+            "ver más",
+            "más"
+          ]
+        },
+        {
+          "name": "SecretRouteIntent",
+          "slots": [
+            {
+              "name": "secretQuestion",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "boaz {secretQuestion}",
+            "Boaz {secretQuestion}",
+            "palabra secreta {secretQuestion}",
+            "modo secreto {secretQuestion}",
+            "siete artes {secretQuestion}",
+            "artes liberales {secretQuestion}",
+            "trivium {secretQuestion}",
+            "quadrivium {secretQuestion}"
+          ]
+        },
+        {
+          "name": "ExplorarArteIntent",
+          "slots": [
+            {
+              "name": "arte",
+              "type": "ARTE_LIBERAL"
+            }
+          ],
+          "samples": [
+            "explícame {arte}",
+            "háblame de {arte}",
+            "qué es {arte}",
+            "enséñame {arte}",
+            "quiero aprender {arte}",
+            "cuéntame sobre {arte}",
+            "explora {arte}",
+            "explorar {arte}",
+            "más sobre {arte}",
+            "profundiza en {arte}"
+          ]
+        },
+        {
+          "name": "ZoomIntent",
+          "slots": [
+            {
+              "name": "direction",
+              "type": "ZOOM_DIRECTION"
+            }
+          ],
+          "samples": [
+            "{direction}",
+            "zoom {direction}",
+            "haz zoom {direction}",
+            "imagen más {direction}",
+            "pon la imagen más {direction}",
+            "haz la imagen más {direction}",
+            "aumenta el zoom",
+            "reduce el zoom",
+            "agranda la imagen",
+            "achica la imagen",
+            "amplía la imagen",
+            "reduce la imagen"
+          ]
+        }
+      ],
+      "types": [
+        {
+          "name": "ZOOM_DIRECTION",
+          "values": [
+            {
+              "name": {
+                "value": "acercar",
+                "synonyms": [
+                  "acerca",
+                  "más grande",
+                  "agranda",
+                  "aumenta",
+                  "aumenta zoom",
+                  "zoom más",
+                  "acercar imagen",
+                  "más",
+                  "aumenta el zoom",
+                  "amplía",
+                  "ampliar"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "alejar",
+                "synonyms": [
+                  "aleja",
+                  "más pequeño",
+                  "achica",
+                  "reduce",
+                  "reduce zoom",
+                  "zoom menos",
+                  "alejar imagen",
+                  "menos",
+                  "reduce el zoom",
+                  "disminuir",
+                  "disminuye"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "VISUAL_MODE",
+          "values": [
+            {
+              "name": {
+                "value": "oscuro",
+                "synonyms": [
+                  "dark",
+                  "negro",
+                  "noche",
+                  "oscura"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "claro",
+                "synonyms": [
+                  "light",
+                  "blanco",
+                  "día",
+                  "clara"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "WHISPER_MODE",
+          "values": [
+            {
+              "name": {
+                "value": "susurro",
+                "synonyms": [
+                  "bajito",
+                  "bajo",
+                  "suave",
+                  "silencioso",
+                  "silenciosa",
+                  "whisper"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "normal",
+                "synonyms": [
+                  "regular",
+                  "estándar",
+                  "alto",
+                  "fuerte",
+                  "natural"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ARTE_LIBERAL",
+          "values": [
+            {
+              "name": {
+                "value": "gramática",
+                "synonyms": [
+                  "gramatica",
+                  "la gramática",
+                  "la gramatica"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "retórica",
+                "synonyms": [
+                  "retorica",
+                  "la retórica",
+                  "la retorica"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "lógica",
+                "synonyms": [
+                  "logica",
+                  "la lógica",
+                  "la logica"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "aritmética",
+                "synonyms": [
+                  "aritmetica",
+                  "la aritmética",
+                  "la aritmetica"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "geometría",
+                "synonyms": [
+                  "geometria",
+                  "la geometría",
+                  "la geometria"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "música",
+                "synonyms": [
+                  "musica",
+                  "la música",
+                  "la musica"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "astronomía",
+                "synonyms": [
+                  "astronomia",
+                  "la astronomía",
+                  "la astronomia"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
