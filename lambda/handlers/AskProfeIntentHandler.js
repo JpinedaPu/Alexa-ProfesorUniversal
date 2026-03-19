@@ -314,24 +314,22 @@ const AskProfeIntentHandler = {
         }
         question = preguntaReconstruida;
 
-        // Extraer keyword principal usando GPT con contexto de historial
-        let keyword = await withTimeout(
-            obtenerKeyword(question, sessionAttributes.history, sessionAttributes.lastSubject || sessionAttributes.lastKeyword, datoSolicitado),
-            TIMEOUTS.KEYWORD_EXTRACTION_TIMEOUT, question
-        );
-        if (!keyword || keyword.length < INPUT.MIN_QUESTION_LENGTH) keyword = question;
-        
-        // Sanitizar keyword para Wolfram: traducir expresiones matemáticas en español a notación estándar
-        keyword = normalizarNotacionMatematica(keyword);
-        console.log(`[KEYWORD] "${keyword}" | T+${Date.now() - startTime}ms`);
-
         // ═══════════════════════════════════════════════════════════════════════════
         // RUTAS ESPECIALIZADAS: Matemática y Científica
         // ═══════════════════════════════════════════════════════════════════════════
-        
-        // Detectar si es pregunta matemática
+
+        // N-2 FIX: detectar ruta matemática ANTES de llamar GPT para keyword
+        // esPreguntaMatematica() es síncrono (solo regex) — no necesita keyword
         if (esPreguntaMatematica(question)) {
             console.log('[ROUTE] Detectada pregunta MATEMÁTICA');
+            // Para ruta matemática, keyword se extrae del fast path de gpt.js (sin llamada GPT)
+            let keyword = await withTimeout(
+                obtenerKeyword(question, sessionAttributes.history, sessionAttributes.lastSubject || sessionAttributes.lastKeyword, datoSolicitado),
+                TIMEOUTS.KEYWORD_EXTRACTION_TIMEOUT, question
+            );
+            if (!keyword || keyword.length < INPUT.MIN_QUESTION_LENGTH) keyword = question;
+            keyword = normalizarNotacionMatematica(keyword);
+            console.log(`[KEYWORD-MATH] "${keyword}" | T+${Date.now() - startTime}ms`);
             try {
                 const resultadoMath = await ejecutarRutaMatematica(question, keyword, startTime);
                 if (!resultadoMath) {
@@ -404,6 +402,15 @@ const AskProfeIntentHandler = {
             }
         }
         
+        // Extraer keyword para rutas científica y flujo normal (no matemática)
+        let keyword = await withTimeout(
+            obtenerKeyword(question, sessionAttributes.history, sessionAttributes.lastSubject || sessionAttributes.lastKeyword, datoSolicitado),
+            TIMEOUTS.KEYWORD_EXTRACTION_TIMEOUT, question
+        );
+        if (!keyword || keyword.length < INPUT.MIN_QUESTION_LENGTH) keyword = question;
+        keyword = normalizarNotacionMatematica(keyword);
+        console.log(`[KEYWORD] "${keyword}" | T+${Date.now() - startTime}ms`);
+
         // Detectar si es pregunta científica
         if (esPreguntaCientifica(question)) {
             console.log('[ROUTE] Detectada pregunta CIENTÍFICA');

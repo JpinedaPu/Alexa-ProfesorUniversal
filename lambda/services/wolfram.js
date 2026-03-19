@@ -119,7 +119,7 @@ async function consultarWolfram(keyword, userLocation = null, options = {}) {
         const TIMEOUT_CALL2 = Math.min(remainingMs - 200, 2800);
         const sbsInput = mejorPod.input;
         const podId = mejorPod.podId;
-        const showAllInput = sbsInput.replace('Step-by-step solution', 'Show all steps');
+        const showAllInput = `${sbsInput.split('__')[0]}__Show all steps`;
         console.log(`[WOLFRAM] Llamada 2 podstates: [${sbsInput}] + [${showAllInput}] | timeout: ${TIMEOUT_CALL2}ms`);
 
         // LLAMADA 2: pasar podId para que extraerPasosSBS sepa qué pod buscar
@@ -216,9 +216,7 @@ function consultarWolframInternal(keyword, userLocation, podstate, startTime, ta
                                     if (!subpod.img?.src) return;
                                     const sbsType = subpod.stepbystepcontenttype;
                                     // Incluir si: tiene tipo SBS explícito, O si no tiene tipo pero tiene tamaño razonable
-                                    const incluir = sbsType
-                                        ? (sbsType === 'SBSStep' || sbsType === 'SBSHintStep')
-                                        : parseInt(subpod.img.width || 0) > 50;
+                                    const incluir = sbsType === 'SBSStep' || sbsType === 'SBSHintStep';
                                     if (incluir) {
                                         imagenesPrioritarias.push({
                                             titulo: podPrimary.title || 'Solución',

@@ -17,6 +17,7 @@ alexa-hosted-version/.env
 lambda/handlers/SecretRouteIntentHandler.js
 lambda/handlers/artesLiberalesRoutes.js
 lambda/services/elevenlabs.js
+docs/MODO_SECRETO.md
 
 # READMEs locales
 README-LOCAL.md
