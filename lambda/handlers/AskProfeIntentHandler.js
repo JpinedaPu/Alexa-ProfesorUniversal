@@ -256,9 +256,13 @@ const AskProfeIntentHandler = {
             && handlerInput.requestEnvelope.request.intent.slots.question.value
             ? handlerInput.requestEnvelope.request.intent.slots.question.value : '';
 
+        // Log detallado para debugging de captura de Alexa
+        const intentName = handlerInput.requestEnvelope.request.intent.name;
+        const slotValue = handlerInput.requestEnvelope.request.intent.slots?.question?.value || 'N/A';
+        console.log(`[IN-ASK] Intent: ${intentName} | Slot capturado: "${slotValue}" | T+${Date.now() - startTime}ms`);
+
         // Truncar preguntas excesivamente largas para evitar problemas de procesamiento
         if (question && question.length > INPUT.MAX_QUESTION_LENGTH) question = question.substring(0, INPUT.MAX_QUESTION_LENGTH);
-        console.log(`[IN-ASK] Pregunta: "${question}" | T+${Date.now() - startTime}ms`);
 
         // Fallback a última pregunta si no se detectó entrada
         if (!question || question.length < 2) {
@@ -361,8 +365,6 @@ const AskProfeIntentHandler = {
                     // Guardar historial
                     const userId = handlerInput.requestEnvelope.session.user.userId;
                     guardarPregunta(userId, question, keyword).catch(e => console.log('[HISTORY] Error:', e.message));
-                    
-                    console.log(`[MATH-ROUTE] Completada | T+${Date.now() - startTime}ms`);
                     
                     // Renderizar APL
                     const supportedInterfaces = Alexa.getSupportedInterfaces(handlerInput.requestEnvelope);
