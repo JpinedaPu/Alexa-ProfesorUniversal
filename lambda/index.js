@@ -406,6 +406,31 @@ const SessionEndedRequestHandler = {
 };
 
 /**
+ * Handler para AMAZON.YesIntent — confirma repetir la última pregunta.
+ * Solo actúa cuando hay un pendingRepeat en sesión (puesto por RepeatLastQuestionIntentHandler).
+ */
+const YesIntentHandler = {
+    canHandle(h) {
+        const sa = h.attributesManager.getSessionAttributes();
+        return Alexa.getRequestType(h.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(h.requestEnvelope) === 'AMAZON.YesIntent'
+            && !!sa.pendingRepeat;
+    },
+    handle(h) {
+        const sa = h.attributesManager.getSessionAttributes();
+        const pregunta = sa.pendingRepeat;
+        sa.pendingRepeat = null;
+        // Inyectar la pregunta como si el usuario la hubiera dicho ahora
+        h.requestEnvelope.request.intent = {
+            name: 'AskProfeIntent',
+            slots: { question: { name: 'question', value: pregunta } }
+        };
+        h.attributesManager.setSessionAttributes(sa);
+        return AskProfeIntentHandler.handle(h);
+    }
+};
+
+/**
  * Handler de fallback - Maneja intents no reconocidos.
  */
 const FallbackIntentHandler = {
@@ -448,6 +473,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         ContinueWolframIntentHandler,   // Continuación de pasos Wolfram
         SkipToResultIntentHandler,      // Saltar al resultado final
         RepeatLastQuestionIntentHandler,// Repetir última respuesta
+        YesIntentHandler,               // Confirmar repetir pregunta
         DarkModeIntentHandler,          // Control de tema visual
         WhisperModeIntentHandler,       // Control de volumen
         ZoomIntentHandler,              // Control de accesibilidad
