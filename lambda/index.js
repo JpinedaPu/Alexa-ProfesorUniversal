@@ -325,7 +325,6 @@ const APLUserEventHandler = {
 
         // Saltar al resultado final en modo Wolfram
         if (args[0] === 'SkipToResult') {
-            const { SkipToResultIntentHandler } = require('./handlers/SkipToResultIntentHandler');
             return SkipToResultIntentHandler.handle(h);
         }
 

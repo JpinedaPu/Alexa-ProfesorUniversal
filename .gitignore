@@ -13,27 +13,16 @@ alexa-hosted-version/.env
 .env.*
 *.env.local
 
-# Modo secreto - solo uso local/Lambda, NO en repo publico
+# Modo secreto - archivos solo en repo privado
 lambda/handlers/SecretRouteIntentHandler.js
 lambda/handlers/artesLiberalesRoutes.js
 lambda/services/elevenlabs.js
-scripts/activar-modo-secreto.js
-scripts/deploy-secreto.ps1
-skill-package/interactionModels/custom/es-ES-artes-liberales.json
-docs/MODO_SECRETO.md
-docs/7-ARTES-LIBERALES.md
-MODO-SECRETO-README.md
-MODO-SECRETO-IMPLEMENTACION.md
-PROTECCION-MODO-SECRETO.md
-DEPLOY-MODO-SECRETO-GUIA.md
-MODO-SECRETO-DESPLEGADO-EXITOSAMENTE.md
-SCRIPTS-ESTADO-ACTUAL.md
 
-# READMEs locales con documentación completa (incluye modo secreto)
+# READMEs locales
 README-LOCAL.md
 lambda/README-LOCAL.md
 
-# Documentación temporal y análisis (en raíz del proyecto)
+# Documentación temporal
 *-ANALISIS.md
 LIMPIEZA-*.md
 PROBLEMA-*.md
@@ -43,9 +32,6 @@ ESTADO-*.md
 ARCHIVOS-*.md
 
 # Excepciones: documentación útil en docs/
-!docs/PROBLEMA-SCRIPTS-POWERSHELL.md
-!docs/ANALISIS-SCRIPTS.md
-!docs/DOCUMENTACION-UTIL.md
 !docs/RUTAS-IMPLEMENTADAS.md
 
 # Deploy artifacts
@@ -64,6 +50,7 @@ tmp/
 *.tmp
 out-*.json
 response-*.json
+test-event-*.json
 lambda/response-*.json
 lambda/out-*.json
 

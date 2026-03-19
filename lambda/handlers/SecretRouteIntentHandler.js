@@ -21,7 +21,7 @@ const { generarAPL } = require('../services/apl');
 const SecretModeIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'SecretModeIntent';
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'SecretRouteIntent';
     },
     
     async handle(handlerInput) {
