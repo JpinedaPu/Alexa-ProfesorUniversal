@@ -3,7 +3,7 @@
  * Configura todos los handlers de intents, maneja eventos APL, y orquesta la experiencia educativa
  * multimodal con soporte para modo oscuro, zoom, susurro y navegación por voz.
  * 
- * @version 7.7.0
+ * @version 7.7.1
  * @author Profesor Universal IA Team
  */
 
