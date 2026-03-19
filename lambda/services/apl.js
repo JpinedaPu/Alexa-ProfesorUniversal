@@ -321,91 +321,112 @@ function generarAPL(isDark) {
                             // 5. Botón "Iniciar paso a paso"
                             // Solo aparece cuando canStepByStep=true Y NO se ha iniciado el modo (masPasosDisponibles=false)
                             {
-                                type: "TouchWrapper",
-                                id: "btnStepByStep",
-                                focusable: true,
+                                type: "Container",
                                 width: "100%",
                                 display: "${templateData.canStepByStep && !templateData.masPasosDisponibles ? 'normal' : 'none'}",
-                                onPress: { type: "SendEvent", arguments: ["StepByStep", "${templateData.keyword}"] },
-                                onFocus: { type: "SetValue", componentId: "btnStepByStep_frame", property: "backgroundColor", value: "#00FF88" },
-                                onBlur:  { type: "SetValue", componentId: "btnStepByStep_frame", property: "backgroundColor", value: "#00E676" },
-                                item: {
-                                    type: "Frame",
-                                    id: "btnStepByStep_frame",
-                                    backgroundColor: "#00E676",
-                                    borderRadius: "24dp",
-                                    borderWidth: "3dp",
-                                    borderColor: "#FFFFFF",
-                                    paddingTop: "16dp", paddingBottom: "16dp",
-                                    paddingLeft: "24dp", paddingRight: "24dp",
-                                    marginTop: "12dp", marginBottom: "12dp",
-                                    marginLeft: "24dp", marginRight: "24dp",
-                                    alignItems: "center",
-                                    items: [
-                                        { type: "Text", text: "▶  Iniciar Solucion Paso a Paso", color: "#000000", fontSize: "20dp", fontWeight: "bold", textAlign: "center" },
-                                        { type: "Text", text: "Toca aqui o di: modo wolfram", color: "#1A5C2A", fontSize: "12dp", textAlign: "center", marginTop: "4dp" }
-                                    ]
-                                }
+                                alignItems: "center",
+                                justifyContent: "center",
+                                paddingTop: "12dp",
+                                paddingBottom: "12dp",
+                                items: [
+                                    {
+                                        type: "TouchWrapper",
+                                        id: "btnStepByStep",
+                                        focusable: true,
+                                        onPress: { type: "SendEvent", arguments: ["StepByStep", "${templateData.keyword}"] },
+                                        onFocus: { type: "SetValue", componentId: "btnStepByStep_frame", property: "backgroundColor", value: "#00FF88" },
+                                        onBlur:  { type: "SetValue", componentId: "btnStepByStep_frame", property: "backgroundColor", value: "#00E676" },
+                                        item: {
+                                            type: "Frame",
+                                            id: "btnStepByStep_frame",
+                                            backgroundColor: "#00E676",
+                                            borderRadius: "24dp",
+                                            borderWidth: "3dp",
+                                            borderColor: "#FFFFFF",
+                                            paddingTop: "16dp", paddingBottom: "16dp",
+                                            paddingLeft: "32dp", paddingRight: "32dp",
+                                            alignItems: "center",
+                                            items: [
+                                                { type: "Text", text: "▶️  Iniciar Solucion Paso a Paso", color: "#000000", fontSize: "20dp", fontWeight: "bold", textAlign: "center" },
+                                                { type: "Text", text: "Toca aqui o di: modo wolfram", color: "#1A5C2A", fontSize: "12dp", textAlign: "center", marginTop: "4dp" }
+                                            ]
+                                        }
+                                    }
+                                ]
                             },
 
                             // 6. Botón "Ver siguientes pasos"
                             // Solo aparece cuando masPasosDisponibles=true (ya se inició el modo paso a paso)
                             {
-                                type: "TouchWrapper",
-                                id: "btnContinue",
-                                focusable: true,
+                                type: "Container",
                                 width: "100%",
                                 display: "${templateData.masPasosDisponibles ? 'normal' : 'none'}",
-                                onPress: { type: "SendEvent", arguments: ["ContinueWolfram"] },
-                                onFocus: { type: "SetValue", componentId: "btnContinue_frame", property: "backgroundColor", value: "#66DFFF" },
-                                onBlur:  { type: "SetValue", componentId: "btnContinue_frame", property: "backgroundColor", value: "#00CAFF" },
-                                item: {
-                                    type: "Frame",
-                                    id: "btnContinue_frame",
-                                    backgroundColor: "#00CAFF",
-                                    borderRadius: "24dp",
-                                    borderWidth: "3dp",
-                                    borderColor: "#FFFFFF",
-                                    paddingTop: "16dp", paddingBottom: "16dp",
-                                    paddingLeft: "24dp", paddingRight: "24dp",
-                                    marginTop: "12dp", marginBottom: "12dp",
-                                    marginLeft: "24dp", marginRight: "24dp",
-                                    alignItems: "center",
-                                    items: [
-                                        { type: "Text", text: "⏩  Ver Siguientes Pasos", color: "#000000", fontSize: "20dp", fontWeight: "bold", textAlign: "center" },
-                                        { type: "Text", text: "Toca aqui o di: continua", color: "#004466", fontSize: "12dp", textAlign: "center", marginTop: "4dp" }
-                                    ]
-                                }
+                                alignItems: "center",
+                                justifyContent: "center",
+                                paddingTop: "12dp",
+                                paddingBottom: "12dp",
+                                items: [
+                                    {
+                                        type: "TouchWrapper",
+                                        id: "btnContinue",
+                                        focusable: true,
+                                        onPress: { type: "SendEvent", arguments: ["ContinueWolfram"] },
+                                        onFocus: { type: "SetValue", componentId: "btnContinue_frame", property: "backgroundColor", value: "#66DFFF" },
+                                        onBlur:  { type: "SetValue", componentId: "btnContinue_frame", property: "backgroundColor", value: "#00CAFF" },
+                                        item: {
+                                            type: "Frame",
+                                            id: "btnContinue_frame",
+                                            backgroundColor: "#00CAFF",
+                                            borderRadius: "24dp",
+                                            borderWidth: "3dp",
+                                            borderColor: "#FFFFFF",
+                                            paddingTop: "16dp", paddingBottom: "16dp",
+                                            paddingLeft: "32dp", paddingRight: "32dp",
+                                            alignItems: "center",
+                                            items: [
+                                                { type: "Text", text: "⏭️  Ver Siguientes Pasos", color: "#000000", fontSize: "20dp", fontWeight: "bold", textAlign: "center" },
+                                                { type: "Text", text: "Toca aqui o di: continua", color: "#004466", fontSize: "12dp", textAlign: "center", marginTop: "4dp" }
+                                            ]
+                                        }
+                                    }
+                                ]
                             },
 
                             // 7. Botón "Ir al resultado final"
                             // Solo aparece cuando masPasosDisponibles=true (ya se inició el modo paso a paso)
                             {
-                                type: "TouchWrapper",
-                                id: "btnSkipToResult",
-                                focusable: true,
+                                type: "Container",
                                 width: "100%",
                                 display: "${templateData.masPasosDisponibles ? 'normal' : 'none'}",
-                                onPress: { type: "SendEvent", arguments: ["SkipToResult"] },
-                                onFocus: { type: "SetValue", componentId: "btnSkipToResult_frame", property: "backgroundColor", value: "#FFB366" },
-                                onBlur:  { type: "SetValue", componentId: "btnSkipToResult_frame", property: "backgroundColor", value: "#FF9933" },
-                                item: {
-                                    type: "Frame",
-                                    id: "btnSkipToResult_frame",
-                                    backgroundColor: "#FF9933",
-                                    borderRadius: "24dp",
-                                    borderWidth: "3dp",
-                                    borderColor: "#FFFFFF",
-                                    paddingTop: "16dp", paddingBottom: "16dp",
-                                    paddingLeft: "24dp", paddingRight: "24dp",
-                                    marginTop: "12dp", marginBottom: "12dp",
-                                    marginLeft: "24dp", marginRight: "24dp",
-                                    alignItems: "center",
-                                    items: [
-                                        { type: "Text", text: "Ir al Resultado Final", color: "#000000", fontSize: "20dp", fontWeight: "bold", textAlign: "center" },
-                                        { type: "Text", text: "Toca aqui o di: ir al resultado", color: "#663300", fontSize: "12dp", textAlign: "center", marginTop: "4dp" }
-                                    ]
+                                alignItems: "center",
+                                justifyContent: "center",
+                                paddingTop: "12dp",
+                                paddingBottom: "12dp",
+                                items: [
+                                    {
+                                        type: "TouchWrapper",
+                                        id: "btnSkipToResult",
+                                        focusable: true,
+                                        onPress: { type: "SendEvent", arguments: ["SkipToResult"] },
+                                        onFocus: { type: "SetValue", componentId: "btnSkipToResult_frame", property: "backgroundColor", value: "#FFB366" },
+                                        onBlur:  { type: "SetValue", componentId: "btnSkipToResult_frame", property: "backgroundColor", value: "#FF9933" },
+                                        item: {
+                                            type: "Frame",
+                                            id: "btnSkipToResult_frame",
+                                            backgroundColor: "#FF9933",
+                                            borderRadius: "24dp",
+                                            borderWidth: "3dp",
+                                            borderColor: "#FFFFFF",
+                                            paddingTop: "16dp", paddingBottom: "16dp",
+                                            paddingLeft: "32dp", paddingRight: "32dp",
+                                            alignItems: "center",
+                                            items: [
+                                                { type: "Text", text: "⏩  Ir al Resultado Final", color: "#000000", fontSize: "20dp", fontWeight: "bold", textAlign: "center" },
+                                                { type: "Text", text: "Toca aqui o di: ir al resultado", color: "#663300", fontSize: "12dp", textAlign: "center", marginTop: "4dp" }
+                                            ]
                                 }
+                                    }
+                                ]
                             },
 
                             // 8. Texto inferior (dato curioso)
@@ -488,32 +509,39 @@ function generarAPL(isDark) {
 
                             // 11. Botón "Ver más imágenes"
                             {
-                                type: "TouchWrapper",
-                                id: "btnVerMasImg",
-                                focusable: true,
+                                type: "Container",
                                 width: "100%",
                                 display: "${templateData.hayMasImagenes ? 'normal' : 'none'}",
-                                onPress: { type: "SendEvent", arguments: ["verMasImagenes"] },
-                                onFocus: { type: "SetValue", componentId: "btnVerMasImg_frame", property: "backgroundColor", value: "#5588FF" },
-                                onBlur:  { type: "SetValue", componentId: "btnVerMasImg_frame", property: "backgroundColor", value: "#3366CC" },
-                                item: {
-                                    type: "Frame",
-                                    id: "btnVerMasImg_frame",
-                                    backgroundColor: "#3366CC",
-                                    borderRadius: "24dp",
-                                    borderWidth: "3dp",
-                                    borderColor: "#AACCFF",
-                                    paddingTop: "14dp", paddingBottom: "14dp",
-                                    paddingLeft: "24dp", paddingRight: "24dp",
-                                    marginTop: "10dp", marginBottom: "10dp",
-                                    marginLeft: "24dp", marginRight: "24dp",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    items: [
-                                        { type: "Text", text: "📷  Ver mas imagenes", color: "#FFFFFF", fontSize: "18dp", fontWeight: "bold", textAlign: "center", width: "100%" },
-                                        { type: "Text", text: "Toca aqui o di: ver mas imagenes", color: "#AACCFF", fontSize: "11dp", textAlign: "center", marginTop: "4dp", width: "100%" }
-                                    ]
-                                }
+                                alignItems: "center",
+                                justifyContent: "center",
+                                paddingTop: "12dp",
+                                paddingBottom: "12dp",
+                                items: [
+                                    {
+                                        type: "TouchWrapper",
+                                        id: "btnVerMasImg",
+                                        focusable: true,
+                                        onPress: { type: "SendEvent", arguments: ["verMasImagenes"] },
+                                        onFocus: { type: "SetValue", componentId: "btnVerMasImg_frame", property: "backgroundColor", value: "#5588FF" },
+                                        onBlur:  { type: "SetValue", componentId: "btnVerMasImg_frame", property: "backgroundColor", value: "#3366CC" },
+                                        item: {
+                                            type: "Frame",
+                                            id: "btnVerMasImg_frame",
+                                            backgroundColor: "#3366CC",
+                                            borderRadius: "24dp",
+                                            borderWidth: "3dp",
+                                            borderColor: "#AACCFF",
+                                            paddingTop: "14dp", paddingBottom: "14dp",
+                                            paddingLeft: "32dp", paddingRight: "32dp",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            items: [
+                                                { type: "Text", text: "🖼️  Ver mas imagenes", color: "#FFFFFF", fontSize: "18dp", fontWeight: "bold", textAlign: "center" },
+                                                { type: "Text", text: "Toca aqui o di: ver mas imagenes", color: "#AACCFF", fontSize: "11dp", textAlign: "center", marginTop: "4dp" }
+                                            ]
+                                        }
+                                    }
+                                ]
                             },
 
                             // 10. Espaciador final para que el último item no quede pegado a los controles
