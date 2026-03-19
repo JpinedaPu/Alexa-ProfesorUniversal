@@ -21,6 +21,7 @@ const { consultarClaude } = require('../services/claude');
 const { generarAPL } = require('../services/apl');
 const { withTimeout } = require('../utils/timeoutManager');
 const { buscarSessionCache, guardarSessionCache, actualizarPaginaCache } = require('../utils/dynamoCache');
+const { formatearTituloMatematico } = require('./mathRoute');
 const https = require('https');
 
 /**
@@ -119,8 +120,19 @@ const WolframAlphaModeIntentHandler = {
 
         // Determinar si es una continuación de paginación
         const isContinue = overrideKeyword === 'CONTINUE_WOLFRAM_MODE';
-        // 1. BUSCAR EN CACHÉ PRIMERO (DynamoDB)
-        const cachedSession = await buscarSessionCache(sessionId, userId);
+        // Detectar si viene del botón APL con datos ya inyectados (no re-llamar Wolfram)
+        const hasInjectedData = !isContinue && overrideKeyword
+            && sessionAttributes.wolframData
+            && Array.isArray(sessionAttributes.wolframData.imagenes)
+            && sessionAttributes.wolframData.imagenes.length > 0;
+
+        // Si viene del botón con datos inyectados, saltar caché y usar directamente
+        if (hasInjectedData) {
+            console.log(`[WOLF-MODE] Datos inyectados: ${sessionAttributes.wolframData.imagenes.length} pasos`);
+        }
+
+        // 1. BUSCAR EN CACHÉ PRIMERO (DynamoDB) — solo si no hay datos inyectados
+        const cachedSession = hasInjectedData ? null : await buscarSessionCache(sessionId, userId);
         
         if (cachedSession && isContinue) {
             console.log('[CACHE] ✅ Session encontrada - Continuando paginación');
@@ -128,7 +140,8 @@ const WolframAlphaModeIntentHandler = {
             // Incrementar página
             const nextPage = cachedSession.currentPage + 1;
             const startIdx = nextPage * cachedSession.stepsPerPage;
-            const endIdx = startIdx + cachedSession.stepsPerPage;
+            const totalSteps = cachedSession.wolframResponse.totalSteps;
+            const endIdx = Math.min(startIdx + cachedSession.stepsPerPage, totalSteps);
             
             const stepsToShow = cachedSession.wolframResponse.allSteps.slice(startIdx, endIdx);
             
@@ -141,8 +154,25 @@ const WolframAlphaModeIntentHandler = {
             // Actualizar página en DynamoDB
             await actualizarPaginaCache(sessionId, userId, nextPage);
             
-            // Explicar SOLO estos 3 pasos con Claude
-            const promptRespuesta = `Explica estos ${stepsToShow.length} pasos matemáticos de forma clara y concisa en español. Pasos ${startIdx + 1} al ${endIdx} de ${cachedSession.wolframResponse.totalSteps} totales.\n\nREGLAS:\n1. Responde SOLO con JSON: {"speech": "explicación", "displayTop": "título", "displayBottom": "resultado"}\n2. Usa español simple, sin símbolos unicode (², ³, ×, ÷, etc.)\n3. Máximo 300 caracteres en speech.`;
+            // Explicar SOLO estos pasos con Claude de forma pedagógica
+            const descripcionPasosCache = stepsToShow.map((step, i) => {
+                const texto = (step.alt || step.titulo || '').replace(/\bIndefinite integral\b/gi, 'Integral indefinida').replace(/\bStep\b/gi, 'Paso').replace(/\bconstant\b/gi, 'constante');
+                return `Paso ${startIdx + i + 1}: ${texto}`;
+            }).join('\n');
+
+            const promptRespuesta = `Eres el "Profesor Universal IA", experto en matemáticas. El usuario está resolviendo: "${cachedSession.originalQuestion}".
+Mostrando pasos ${startIdx + 1} al ${endIdx} de ${cachedSession.wolframResponse.totalSteps}.
+
+Contenido de los pasos (imágenes de Wolfram Alpha):
+${descripcionPasosCache}
+
+INSTRUCCIONES — responde SOLO con JSON válido:
+{"speech": "...", "displayTop": "...", "displayBottom": "..."}
+
+- "speech": explica TODOS los pasos mostrados en español, pedagógico y conversacional (máx 280 chars). NO uses inglés. NO repitas la expresión matemática completa.
+- "displayTop": nombre descriptivo del proceso en español, SIN expresiones matemáticas (ej: "Separación de Términos", "Integración por Partes", "Simplificación Final")
+- "displayBottom": qué viene después o dato útil en español
+- Sin símbolos unicode (², √, π, ∞). TODO en ESPAÑOL.`;
             
             const sintesisResult = await withTimeout(
                 consultarClaude(cachedSession.originalQuestion, JSON.stringify(stepsToShow), '', '', cachedSession.originalQuestion, [], { prompt: promptRespuesta, timeout: 4000 }),
@@ -161,7 +191,7 @@ const WolframAlphaModeIntentHandler = {
                 speechOutput = `<amazon:effect name="whispered">${speechOutput.replace(/<[^>]+>/g, '')}</amazon:effect>`;
             }
             
-            const hayMasPasos = endIdx < cachedSession.wolframResponse.totalSteps;
+            const hayMasPasos = endIdx < totalSteps;
             if (hayMasPasos) {
                 speechOutput += ' Cuando quieras continuar, di continúa.';
             }
@@ -175,7 +205,7 @@ const WolframAlphaModeIntentHandler = {
                     document: generarAPL(sessionAttributes.darkMode),
                     datasources: {
                         templateData: {
-                            titulo: `👨🏫 Paso a Paso: ${cachedSession.originalQuestion} (${startIdx + 1}-${endIdx}/${cachedSession.wolframResponse.totalSteps})`,
+                            titulo: `Solución Paso a Paso (${startIdx + 1}-${endIdx} de ${totalSteps})`,
                             textoSuperior: sintesisResult.displayTop || '',
                             textoInferior: sintesisResult.displayBottom || '',
                             imagenes: stepsToShow,
@@ -225,6 +255,13 @@ const WolframAlphaModeIntentHandler = {
             if (isContinue && sessionAttributes.wolframData) {
                 // Reuso de datos ya obtenidos — no llama a Wolfram de nuevo
                 wolfram = sessionAttributes.wolframData;
+            } else if (hasInjectedData) {
+                // Viene del botón APL — datos ya inyectados por index.js, no re-llamar Wolfram
+                wolfram = sessionAttributes.wolframData;
+                keywordMath = sessionAttributes.wolframData.keywordMath || keyword;
+                // Forzar reset del step a 0 para empezar siempre desde el paso 1
+                sessionAttributes.currentWolframStep = 0;
+                console.log(`[WOLF-MODE] Datos inyectados: ${wolfram.imagenes.length} pasos | keyword: ${keyword}`);
             } else {
                 // PASO CRUCIAL: Convertir lenguaje natural -> notación matemática para Wolfram
                 console.log(`[WOLF-MODE] Convirtiendo query a notación matemática: "${keyword}"`);
@@ -262,7 +299,7 @@ const WolframAlphaModeIntentHandler = {
                 // 3. Traducir la pregunta a notación matemática y consultar Wolfram con podstate correcto
                 wolfram = await withTimeout(
                     consultarWolfram(keywordMath, null, { isStepByStep: true }),
-                    5000,
+                    6500,
                     { imagenes: [], texto: '', canStepByStep: false }
                 );
 
@@ -276,7 +313,8 @@ const WolframAlphaModeIntentHandler = {
                         questionType: 'step-by-step',
                         wolframResponse: {
                             allSteps: wolfram.imagenes,
-                            totalSteps: wolfram.imagenes.length
+                            totalSteps: wolfram.imagenes.length,
+                            imagenesNormales: wolfram.imagenesNormales || [] // ← NUEVO: Guardar pods normales
                         },
                         currentPage: 0,
                         stepsPerPage: 3,
@@ -289,6 +327,7 @@ const WolframAlphaModeIntentHandler = {
                     keyword,
                     keywordMath,
                     imagenes: wolfram.imagenes || [],
+                    imagenesNormales: wolfram.imagenesNormales || [], // ← NUEVO: Guardar pods normales
                     texto: wolfram.texto || '',
                     canStepByStep: wolfram.canStepByStep || false
                 };
@@ -297,7 +336,7 @@ const WolframAlphaModeIntentHandler = {
 
             if (!wolfram.texto && (!wolfram.imagenes || wolfram.imagenes.length === 0)) {
                 return handlerInput.responseBuilder
-                    .speak(`Lo siento, Wolfram no encontró una solución paso a paso para "${keyword}". Puedes intentar con más detalle.`)
+                    .speak(`Lo siento, Wolfram no encontró una solución paso a paso para "${keywordMath || keyword}". Puedes intentar con más detalle.`)
                     .reprompt("¿Algo más?")
                     .getResponse();
             }
@@ -313,20 +352,45 @@ const WolframAlphaModeIntentHandler = {
             sessionAttributes.currentWolframStep = currentStep + maxPodsPerTurn;
             attributesManager.setSessionAttributes(sessionAttributes);
 
-            // ── Prompt Claude para que explique en español ──
+            // ── Prompt Claude para que explique en español de forma pedagógica ──
             const wolframTexto = (sessionAttributes.wolframData && sessionAttributes.wolframData.texto) || wolfram.texto || '';
-            const promptRespuesta = `Eres el "Profesor Universal", experto en matemáticas. El usuario pidió la solución de "${keyword}" (notación: "${keywordMath || keyword}").
-Estás explicando los pasos del ${currentStep + 1} al ${currentStep + imagenesAMostrar.length} de ${allImages.length} en total.
-Datos de Wolfram Alpha: ${wolframTexto}
+            const textoES = wolframTexto
+                .replace(/\bIndefinite integral\b/gi, 'Integral indefinida')
+                .replace(/\bDefinite integral\b/gi, 'Integral definida')
+                .replace(/\bDerivative\b/gi, 'Derivada')
+                .replace(/\bResult:/gi, 'Resultado:')
+                .replace(/\bAlternate forms?\b/gi, 'Forma alternativa')
+                .replace(/\bSeries expansion\b/gi, 'Expansión en serie')
+                .replace(/\bconstant\b/gi, 'constante')
+                .replace(/\bInput interpretation\b/gi, 'Interpretación')
+                .replace(/\bRoots?:/gi, 'Raíces:')
+                .replace(/\bPlot\b/gi, 'Gráfica');
 
-REGLAS DE SALIDA (CRÍTICO):
-1. Responde EXCLUSIVAMENTE con JSON válido, sin texto fuera del JSON.
-2. El campo "speech" debe estar en ESPAÑOL, sin símbolos matemáticos raros (escribe "x al cuadrado" en lugar de "x²").
-3. Usa caracteres ASCII simples solamente. NO uses caracteres unicode especiales como ², ³, ≤, ≥, ×, ÷.
-4. Formato: {"speech": "explicación en español", "displayTop": "Paso ${currentStep + 1}-${currentStep + imagenesAMostrar.length}", "displayBottom": "Resultado parcial", "keyword": "${keyword}"}`;
+            // Construir descripción de los pasos actuales con su texto (no solo título)
+            const descripcionPasos = imagenesAMostrar.map((img, i) => {
+                const texto = (img.alt || img.titulo || '').replace(/\bIndefinite integral\b/gi, 'Integral indefinida').replace(/\bStep\b/gi, 'Paso').replace(/\bconstant\b/gi, 'constante');
+                return `Paso ${currentStep + i + 1}: ${texto}`;
+            }).join('\n');
+
+            const tituloSBS = formatearTituloMatematico(keywordMath || keyword);
+            const promptRespuesta = `Eres el "Profesor Universal IA", experto en matemáticas. El usuario está resolviendo: "${keyword}".
+Mostrando pasos ${currentStep + 1} al ${currentStep + imagenesAMostrar.length} de ${allImages.length}.
+
+Contenido de los pasos (imágenes de Wolfram Alpha):
+${descripcionPasos}
+
+Contexto matemático: ${textoES}
+
+INSTRUCCIONES — responde SOLO con JSON válido:
+{"speech": "...", "displayTop": "...", "displayBottom": "...", "keyword": "${keyword}"}
+
+- "speech": explica TODOS los pasos mostrados en español, pedagógico y conversacional (máx 280 chars). NO uses inglés. NO repitas la expresión matemática completa.
+- "displayTop": nombre descriptivo del proceso en español, SIN expresiones matemáticas (ej: "Separación de Términos", "Integración por Partes", "Simplificación Final")
+- "displayBottom": qué viene después o dato útil en español (ej: "Siguiente: agregar la constante de integración")
+- Sin símbolos unicode (², √, π, ∞). TODO en ESPAÑOL.`;
 
             const sintesisResult = await withTimeout(
-                consultarClaude(keyword, wolframTexto, '', '', keyword, [], { prompt: promptRespuesta, timeout: 4000 }),
+                consultarClaude(keyword, textoES, '', '', keyword, [], { prompt: promptRespuesta, timeout: 4000 }),
                 4500,
                 { speech: 'Aquí tienes los pasos de la solución.', displayTop: `Paso ${currentStep + 1}`, displayBottom: '', keyword }
             );
@@ -356,7 +420,7 @@ REGLAS DE SALIDA (CRÍTICO):
                     document: generarAPL(sessionAttributes.darkMode),
                     datasources: {
                         templateData: {
-                            titulo: `👨‍🏫 Paso a Paso: ${sintesisResult.keyword || keyword} (${currentStep + 1}-${Math.min(currentStep + maxPodsPerTurn, allImages.length)}/${allImages.length})`,
+                            titulo: `Solución Paso a Paso (${currentStep + 1}-${Math.min(currentStep + maxPodsPerTurn, allImages.length)} de ${allImages.length})`,
                             textoSuperior: sintesisResult.displayTop || '',
                             textoInferior: sintesisResult.displayBottom || '',
                             imagenes: imagenesAMostrar,

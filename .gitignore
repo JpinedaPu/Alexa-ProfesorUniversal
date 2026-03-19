@@ -13,6 +13,24 @@ alexa-hosted-version/.env
 .env.*
 *.env.local
 
+# Modo secreto - solo uso local/Lambda, NO en repo publico
+lambda/handlers/SecretRouteIntentHandler.js
+lambda/handlers/artesLiberalesRoutes.js
+lambda/services/elevenlabs.js
+scripts/activar-modo-secreto.js
+scripts/deploy-secreto.ps1
+skill-package/interactionModels/custom/es-ES-artes-liberales.json
+docs/MODO_SECRETO.md
+docs/7-ARTES-LIBERALES.md
+MODO-SECRETO-README.md
+MODO-SECRETO-IMPLEMENTACION.md
+PROTECCION-MODO-SECRETO.md
+DEPLOY-MODO-SECRETO-GUIA.md
+
+# READMEs locales con documentación completa (incluye modo secreto)
+README-LOCAL.md
+lambda/README-LOCAL.md
+
 # Deploy artifacts
 lambda_deploy.zip
 *.zip

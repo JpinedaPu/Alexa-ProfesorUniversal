@@ -245,7 +245,7 @@ function generarAPL(isDark) {
                             {
                                 type: "Container",
                                 width: "100%",
-                                display: "${templateData.soloImagenes ? 'none' : 'normal'}",
+                                when: "${templateData.textoSuperior && templateData.textoSuperior != '' && !templateData.soloImagenes}",
                                 paddingLeft: "20dp", paddingRight: "20dp",
                                 paddingTop: "18dp", paddingBottom: "14dp",
                                 backgroundColor: c.content,
@@ -255,7 +255,22 @@ function generarAPL(isDark) {
                                 ]
                             },
 
-                            // 2. Pods de Wolfram — cada pod es un item del Sequence
+                            // 2. Logo dinámico Wolfram — solo sobre el primer pod, cuando hay resultados
+                            {
+                                type: "Container",
+                                width: "100%",
+                                display: "${templateData.fuenteWolfram && templateData.imagenes && templateData.imagenes.length > 0 ? 'normal' : 'none'}",
+                                alignItems: "center",
+                                paddingTop: "10dp",
+                                paddingBottom: "4dp",
+                                backgroundColor: c.content,
+                                items: [
+                                    { type: "Image", source: "https://alexa-profesor-universal-cache-us-east-1.s3.us-east-1.amazonaws.com/logos/wolfram_dinamico.png",
+                                      width: "160dp", height: "36dp", scale: "best-fit", align: "center" }
+                                ]
+                            },
+
+                            // 3. Pods de Wolfram — cada pod es un item del Sequence
                             //    data-binding genera un item por pod automáticamente
                             {
                                 type: "Container",
@@ -287,13 +302,30 @@ function generarAPL(isDark) {
                                 ]
                             },
 
-                            // 4. Botón "Iniciar paso a paso"
+                            // 4. Badge Wikipedia (ANTES de los botones)
+                            {
+                                type: "Container",
+                                direction: "row",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                width: "100%",
+                                paddingTop: "8dp", paddingBottom: "8dp",
+                                backgroundColor: c.content,
+                                display: "${templateData.fuenteWikipedia ? 'normal' : 'none'}",
+                                items: [
+                                    { type: "Image", source: "https://upload.wikimedia.org/wikipedia/commons/6/63/Wikipedia-logo.png", width: "26dp", height: "26dp", scale: "best-fit" },
+                                    { type: "Text", text: " Wikipedia", color: "#FFFFFF", fontSize: "13dp", fontWeight: "bold", paddingLeft: "4dp" }
+                                ]
+                            },
+
+                            // 5. Botón "Iniciar paso a paso"
+                            // Solo aparece cuando canStepByStep=true Y NO se ha iniciado el modo (masPasosDisponibles=false)
                             {
                                 type: "TouchWrapper",
                                 id: "btnStepByStep",
                                 focusable: true,
                                 width: "100%",
-                                display: "${templateData.canStepByStep ? 'normal' : 'none'}",
+                                display: "${templateData.canStepByStep && !templateData.masPasosDisponibles ? 'normal' : 'none'}",
                                 onPress: { type: "SendEvent", arguments: ["StepByStep", "${templateData.keyword}"] },
                                 onFocus: { type: "SetValue", componentId: "btnStepByStep_frame", property: "backgroundColor", value: "#00FF88" },
                                 onBlur:  { type: "SetValue", componentId: "btnStepByStep_frame", property: "backgroundColor", value: "#00E676" },
@@ -316,7 +348,8 @@ function generarAPL(isDark) {
                                 }
                             },
 
-                            // 5. Botón "Ver siguientes pasos"
+                            // 6. Botón "Ver siguientes pasos"
+                            // Solo aparece cuando masPasosDisponibles=true (ya se inició el modo paso a paso)
                             {
                                 type: "TouchWrapper",
                                 id: "btnContinue",
@@ -345,7 +378,8 @@ function generarAPL(isDark) {
                                 }
                             },
 
-                            // 5b. Botón "Ir al resultado final"
+                            // 7. Botón "Ir al resultado final"
+                            // Solo aparece cuando masPasosDisponibles=true (ya se inició el modo paso a paso)
                             {
                                 type: "TouchWrapper",
                                 id: "btnSkipToResult",
@@ -374,27 +408,11 @@ function generarAPL(isDark) {
                                 }
                             },
 
-                            // 6. Badge Wikipedia
-                            {
-                                type: "Container",
-                                direction: "row",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                width: "100%",
-                                paddingTop: "8dp", paddingBottom: "8dp",
-                                backgroundColor: c.content,
-                                display: "${templateData.fuenteWikipedia ? 'normal' : 'none'}",
-                                items: [
-                                    { type: "Image", source: "https://upload.wikimedia.org/wikipedia/commons/6/63/Wikipedia-logo.png", width: "26dp", height: "26dp", scale: "best-fit" },
-                                    { type: "Text", text: " Wikipedia", color: "#FFFFFF", fontSize: "13dp", fontWeight: "bold", paddingLeft: "4dp" }
-                                ]
-                            },
-
-                            // 7. Texto inferior (dato curioso)
+                            // 8. Texto inferior (dato curioso)
                             {
                                 type: "Container",
                                 width: "100%",
-                                display: "${templateData.soloImagenes ? 'none' : 'normal'}",
+                                when: "${templateData.textoInferior && templateData.textoInferior != '' && !templateData.soloImagenes}",
                                 paddingLeft: "20dp", paddingRight: "20dp",
                                 paddingTop: "14dp", paddingBottom: "14dp",
                                 backgroundColor: c.content,
@@ -404,7 +422,7 @@ function generarAPL(isDark) {
                                 ]
                             },
 
-                            // 8. Imágenes extra (NASA / Wikimedia) — solo si NO hay pods Wolfram, modo normal
+                            // 9. Imágenes extra (NASA / Wikimedia) — solo si NO hay pods Wolfram, modo normal
                             {
                                 type: "Container",
                                 width: "100%",
@@ -436,7 +454,7 @@ function generarAPL(isDark) {
                                 ]
                             },
 
-                            // 8b. Pantalla "Ver más imágenes" — solo título + logos + grid de imágenes
+                            // 10. Pantalla "Ver más imágenes" — solo título + logos + grid de imágenes
                             {
                                 type: "Container",
                                 width: "100%",
@@ -468,7 +486,7 @@ function generarAPL(isDark) {
                                 ]
                             },
 
-                            // 9. Botón "Ver más imágenes"
+                            // 11. Botón "Ver más imágenes"
                             {
                                 type: "TouchWrapper",
                                 id: "btnVerMasImg",

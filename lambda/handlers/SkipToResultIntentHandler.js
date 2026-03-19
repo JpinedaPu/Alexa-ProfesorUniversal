@@ -36,36 +36,84 @@ const SkipToResultIntentHandler = {
         // Buscar en caché primero
         const cachedSession = await buscarSessionCache(sessionId, userId);
         
-        let allSteps = [];
+        let imagenesNormales = []; // Pods de la primera llamada (Input, Result, Plot, etc.)
+        let allSteps = []; // Pasos de la segunda llamada
         let originalQuestion = '';
         
         if (cachedSession) {
-            allSteps = cachedSession.wolframResponse.allSteps;
+            allSteps = cachedSession.wolframResponse.allSteps || [];
+            imagenesNormales = cachedSession.wolframResponse.imagenesNormales || [];
             originalQuestion = cachedSession.originalQuestion;
         } else if (sessionAttributes.wolframData) {
             allSteps = sessionAttributes.wolframData.imagenes || [];
+            imagenesNormales = sessionAttributes.wolframData.imagenesNormales || [];
             originalQuestion = sessionAttributes.wolframData.keyword || '';
         }
         
-        if (allSteps.length === 0) {
+        // Priorizar buscar en imagenesNormales (primera llamada)
+        if (imagenesNormales.length === 0 && allSteps.length === 0) {
             return handlerInput.responseBuilder
                 .speak('No hay una solución paso a paso activa. Primero pide resolver algo con "modo wolfram".')
                 .reprompt('¿Qué quieres calcular?')
                 .getResponse();
         }
         
-        // Obtener el último pod (resultado final)
-        const resultPod = allSteps[allSteps.length - 1];
+        // Buscar el pod "Result" en las imágenes normales (primera llamada)
+        let resultPod = imagenesNormales.find(pod => 
+            pod.titulo && (
+                pod.titulo === 'Result' || 
+                pod.titulo === 'Results' || 
+                pod.titulo === 'Solution' || 
+                pod.titulo === 'Solutions'
+            )
+        );
         
-        // Explicar el resultado con Claude
-        const promptRespuesta = `El usuario pidió la solución de "${originalQuestion}" y quiere ver directamente el resultado final.
+        // Si no hay pod Result en imagenesNormales, buscar en allSteps
+        if (!resultPod && allSteps.length > 0) {
+            resultPod = allSteps.find(pod => 
+                pod.titulo && (
+                    pod.titulo === 'Result' || 
+                    pod.titulo === 'Results' || 
+                    pod.titulo === 'Solution' || 
+                    pod.titulo === 'Solutions'
+                )
+            );
+        }
+        
+        // Si aún no hay, usar el último de allSteps
+        if (!resultPod && allSteps.length > 0) {
+            resultPod = allSteps[allSteps.length - 1];
+        }
+        
+        // Si aún no hay, usar el último de imagenesNormales
+        if (!resultPod && imagenesNormales.length > 0) {
+            resultPod = imagenesNormales[imagenesNormales.length - 1];
+        }
+        
+        if (!resultPod) {
+            return handlerInput.responseBuilder
+                .speak('No pude encontrar el resultado. Intenta de nuevo.')
+                .reprompt('¿Qué quieres calcular?')
+                .getResponse();
+        }
+        
+        console.log(`[SKIP-TO-RESULT] Pod seleccionado: ${resultPod.titulo}`);
+        
+        // Explicar el resultado con Claude de forma rápida y directa
+        const promptRespuesta = `Eres el "Profesor Universal IA". El usuario pidió resolver "${originalQuestion}" y quiere ver directamente el RESULTADO FINAL sin pasos intermedios.
+
 Resultado de Wolfram Alpha: ${resultPod.titulo}
 
-REGLAS:
-1. Responde SOLO con JSON: {"speech": "explicación", "displayTop": "título", "displayBottom": "resultado"}
-2. En "speech" explica brevemente el resultado final en español simple
-3. Máximo 200 caracteres en speech
-4. No uses símbolos unicode (², ³, ×, ÷, etc.)`;
+INSTRUCCIONES:
+1. Responde EXCLUSIVAMENTE con JSON válido: {"speech": "explicación", "displayTop": "título", "displayBottom": "dato adicional"}
+2. En "speech": Explica el resultado final de forma RÁPIDA y DIRECTA en español (máximo 150 caracteres)
+   - Ejemplo: "La solución es x igual a 2 o x igual a menos 2. Estas son las raíces de la ecuación."
+3. En "displayTop": Un título corto del resultado (ej: "Soluciones: x = ±2")
+4. En "displayBottom": Un dato adicional o verificación (ej: "Verificado: (2)² - 4 = 0 ✓")
+5. NO uses símbolos unicode (², ³, ×, ÷, √, π, ∞, etc.) - escribe todo en texto
+6. Sé conciso y directo, el usuario quiere el resultado YA
+
+Responde SOLO con el JSON, sin texto adicional.`;
         
         const sintesisResult = await withTimeout(
             consultarClaude(originalQuestion, resultPod.titulo, '', '', originalQuestion, [], { prompt: promptRespuesta, timeout: 3000 }),

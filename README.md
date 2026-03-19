@@ -24,7 +24,6 @@ Skill educativa en `es-ES` con arquitectura de respuesta híbrida y multi-modelo
 - 📊 **Caché inteligente** S3 + DynamoDB
 - 🔄 **CI/CD automático** GitHub Actions → AWS Lambda
 - 📚 **Documentación completa** con JSDoc en español
-- 🔒 **Modo secreto** - Las 7 Artes Liberales (Trivium + Quadrivium)
 
 ## Estructura del Proyecto
 
@@ -78,7 +77,6 @@ Para sincronizar tu archivo `.env` local con AWS Lambda:
 - 🔧 [Qué Hace Cada Cosa](./docs/QUE_HACE_CADA_COSA.md)
 - 📊 [Diagramas de Arquitectura](./docs/DIAGRAMA_ARQUITECTURA.md)
 - ⚡ [Referencia Rápida](./docs/REFERENCIA_RAPIDA.md)
-- 🔒 [Modo Secreto - 7 Artes Liberales](./docs/MODO_SECRETO.md)
 
 ## 📊 Infraestructura AWS
 

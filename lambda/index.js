@@ -17,7 +17,6 @@ const { WolframAlphaModeIntentHandler }  = require('./handlers/WolframAlphaModeI
 const { ContinueWolframIntentHandler }   = require('./handlers/ContinueWolframIntentHandler');
 const { SkipToResultIntentHandler }      = require('./handlers/SkipToResultIntentHandler');
 const { RepeatLastQuestionIntentHandler } = require('./handlers/RepeatLastQuestionIntentHandler');
-const { SecretRouteIntentHandler, ExplorarArteIntentHandler } = require('./handlers/SecretRouteIntentHandler');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -308,9 +307,21 @@ const APLUserEventHandler = {
 
         // Activar modo paso a paso de Wolfram
         if (args[0] === 'StepByStep') {
-            sa.forceStepByStep = true;
+            const imagenesPasos = sa.lastImagenesPasos || [];
+            const keyword = sa.lastKeyword || args[1] || '';
+            // Inyectar pasos ya capturados en wolframData — sin re-llamar Wolfram
+            // currentWolframStep SIEMPRE en 0 para empezar desde el paso 1
+            sa.wolframData = {
+                keyword,
+                keywordMath: keyword,
+                imagenes: imagenesPasos,
+                imagenesNormales: sa.lastImagenes || [],
+                texto: sa.lastDisplayBottom || '',
+                canStepByStep: imagenesPasos.length > 0
+            };
+            sa.currentWolframStep = 0;  // reset explícito siempre
             h.attributesManager.setSessionAttributes(sa);
-            return WolframAlphaModeIntentHandler.handle(h, args[1]);
+            return WolframAlphaModeIntentHandler.handle(h, keyword);
         }
 
         // Saltar al resultado final en modo Wolfram
@@ -432,8 +443,6 @@ exports.handler = Alexa.SkillBuilders.custom()
         LaunchRequestHandler,           // Inicialización
         HelpIntentHandler,              // Ayuda
         NavigateHomeIntentHandler,      // Navegación
-        SecretRouteIntentHandler,       // 🔒 Modo secreto: 7 Artes Liberales
-        ExplorarArteIntentHandler,      // 🔒 Explorar artes liberales
         AskProfeIntentHandler,          // Pregunta principal (corazón de la skill)
         WolframAlphaModeIntentHandler,  // Modo matemático paso a paso
         ContinueWolframIntentHandler,   // Continuación de pasos Wolfram

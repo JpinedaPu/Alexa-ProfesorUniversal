@@ -1,264 +1,138 @@
-# ¿Qué hace cada cosa? - Guía Completa del Proyecto
-
-## 🎯 VISIÓN GENERAL
-
-**Profesor Universal IA** es un Alexa Skill educativo que combina 4 inteligencias artificiales para responder preguntas de ciencia, matemáticas e historia con voz natural y visuales.
-
-## 🏗️ ARQUITECTURA DEL SISTEMA
-
-```
-Usuario → Alexa → AWS Lambda → [4 IAs] → Respuesta Educativa
-                     ↓
-            [Wolfram + Wikipedia + Gemini + Claude]
-```
-
-## 📁 ESTRUCTURA DE CARPETAS
-
-### `.ask/lambda/` - VERSIÓN DE PRODUCCIÓN
-**QUÉ ES:** Código que se ejecuta en AWS Lambda (la nube de Amazon)
-**CUÁNDO SE USA:** Cuando alguien habla con Alexa en dispositivos reales
-**DEPLOY:** Automático vía GitHub Actions cuando haces `git push`
-
-### `alexa-hosted-version/` - VERSIÓN DE DESARROLLO  
-**QUÉ ES:** Código para pruebas en el simulador de Amazon
-**CUÁNDO SE USA:** Para desarrollo y testing antes de publicar
-**DEPLOY:** Manual desde Alexa Developer Console
-
-### `lambda/` - CÓDIGO PRINCIPAL
-**QUÉ ES:** El "cerebro" del skill que procesa las preguntas
-**COMPONENTES CLAVE:**
-- `index.js` - Punto de entrada, recibe la pregunta de Alexa
-- `handlers/` - Lógica para diferentes tipos de preguntas
-- `services/` - Conexiones a las 4 IAs externas
-- `utils/` - Herramientas compartidas (cache, logs, etc.)
-
-## 🤖 LAS 4 INTELIGENCIAS ARTIFICIALES
-### 1. 🧮 WOLFRAM ALPHA
-**QUÉ HACE:** Resuelve matemáticas, física, química, astronomía
-**CUÁNDO SE USA:** "¿Cuánto pesa la Tierra?", "Resuelve x² + 3x - 4 = 0"
-**ARCHIVO:** `wolfram.js`
-**RESULTADO:** Datos técnicos precisos + gráficos/imágenes
-
-### 2. 📚 WIKIPEDIA  
-**QUÉ HACE:** Información enciclopédica general
-**CUÁNDO SE USA:** "¿Quién fue Einstein?", "¿Qué es la fotosíntesis?"
-**ARCHIVO:** `wikipedia.js`
-**RESULTADO:** Contexto histórico y definiciones
-
-### 3. 🔍 GEMINI (Google)
-**QUÉ HACE:** Información actualizada hasta febrero 2025
-**CUÁNDO SE USA:** Preguntas sobre eventos recientes
-**ARCHIVO:** `gemini.js` (antes `geminiWebSearch.js`)
-**RESULTADO:** Datos actuales y contexto adicional
-
-### 4. 🎓 CLAUDE (Anthropic)
-**QUÉ HACE:** Sintetiza todo en una respuesta educativa perfecta
-**CUÁNDO SE USA:** SIEMPRE (es el "profesor" que explica)
-**ARCHIVO:** `claude.js`
-**RESULTADO:** Respuesta final con voz natural + texto visual
-
-## 🔄 FLUJO DE UNA PREGUNTA
-
-```
-1. Usuario: "¿Qué es el sol?"
-2. Alexa → AWS Lambda → index.js
-3. AskProfeIntentHandler.js procesa la pregunta
-4. EN PARALELO:
-   - Wolfram: datos técnicos del sol
-   - Wikipedia: información enciclopédica  
-   - Gemini: contexto adicional
-5. Claude sintetiza todo en respuesta educativa
-6. APL genera visuales para pantalla
-7. Alexa responde con voz + imágenes
-```
-
-## 📂 ARCHIVOS PRINCIPALES EXPLICADOS
-
-### `index.js` - EL DIRECTOR DE ORQUESTA
-**QUÉ HACE:** 
-- Recibe la pregunta de Alexa
-- Decide qué handler usar
-- Devuelve la respuesta final
-**ANALOGÍA:** Como el recepcionista que dirige a los visitantes
-
-### `handlers/AskProfeIntentHandler.js` - EL CEREBRO PRINCIPAL
-**QUÉ HACE:**
-- Procesa preguntas educativas generales
-- Coordina las 4 IAs en paralelo
-- Construye la respuesta final
-**ANALOGÍA:** Como el director de una orquesta coordinando músicos
-
-### `handlers/WolframAlphaModeIntentHandler.js` - MODO MATEMÁTICO
-**QUÉ HACE:**
-- Resuelve ecuaciones paso a paso
-- Muestra proceso matemático detallado
-**CUÁNDO:** "Resuelve paso a paso x² + 5x + 6 = 0"
-
-### `utils/cache.js` - LA MEMORIA
-**QUÉ HACE:**
-- Guarda respuestas para preguntas repetidas
-- Hace el skill 16% más rápido
-**ANALOGÍA:** Como recordar respuestas de exámenes anteriores
-
-### `utils/logger.js` - EL REPORTERO
-**QUÉ HACE:**
-- Registra todo lo que pasa (logs)
-- Ayuda a encontrar problemas
-**ANALOGÍA:** Como el periodista que documenta eventos
-
-### `apl.js` - EL DISEÑADOR VISUAL
-**QUÉ HACE:**
-- Crea las pantallas bonitas con imágenes
-- Adapta el diseño según el dispositivo
-**PARA:** Echo Show, Fire TV, móviles con Alexa
-
-## 🛠️ HERRAMIENTAS Y CONFIGURACIÓN
-
-### `package.json` - LA LISTA DE COMPRAS
-**QUÉ HACE:** Define qué librerías necesita el proyecto
-**CONTIENE:** 
-- ask-sdk-core (para hablar con Alexa)
-- @aws-sdk/* (para usar servicios de Amazon)
-
-### `scripts/deploy.ps1` - EL BOTÓN MÁGICO
-**QUÉ HACE:** 
-```powershell
-.\scripts\deploy.ps1 "mensaje del cambio"
-```
-- Sube código a GitHub
-- GitHub Actions lo despliega automáticamente a AWS
-**ANALOGÍA:** Como publicar un libro con un solo clic
-
-### `scripts/test-all.ps1` - EL EXAMINADOR
-**QUÉ HACE:** Ejecuta 20 pruebas diferentes
-- Pregunta sobre fotosíntesis
-- Resuelve ecuaciones
-- Prueba comandos de voz
-**RESULTADO:** Reporte de qué funciona y qué no
-
-## 🗂️ ARCHIVOS DE CONFIGURACIÓN
-
-### `skill.json` - EL CARNET DE IDENTIDAD
-**QUÉ DEFINE:**
-- Nombre: "Profesor Universal IA"
-- Países: España, México, Colombia, Argentina, USA
-- Permisos: Acceso a ubicación del usuario
-- Pantallas: TV, Echo Show, móviles
-
-### `ask-resources.json` - EL MAPA DE RUTAS
-**QUÉ HACE:** Le dice a Alexa dónde está cada cosa
-- Código → `lambda/`
-- Configuración → `skill-package/`
-- Diferentes perfiles (root, user, default)
-
-### `interactionModels/custom/es-ES.json` - EL DICCIONARIO
-**QUÉ CONTIENE:**
-- Frases que entiende: "¿qué es...", "resuelve...", "explica..."
-- Tipos de datos: preguntas, ecuaciones, comandos
-- Nombre de invocación: "profesor universal"
-
-## 📊 MONITOREO Y LOGS
-
-### CloudWatch (AWS)
-**QUÉ MONITOREA:**
-- Cuántas preguntas por día
-- Qué tan rápido responde
-- Si hay errores
-
-### GitHub Actions
-**QUÉ HACE:**
-- Deploy automático cuando cambias código
-- Ejecuta tests antes de publicar
-- Notifica si algo se rompe
-
-## 🎨 INTERFAZ VISUAL (APL)
-
-### Para Echo Show / Fire TV
-- Imágenes de Wolfram Alpha
-- Logos de las 4 IAs
-- Modo oscuro/claro
-- Zoom de imágenes
-- Botones interactivos
-
-### Para móviles
-- Diseño adaptativo
-- Texto legible
-- Imágenes optimizadas
-
-## 🔐 SEGURIDAD Y VARIABLES
-
-### Variables de Entorno (Secretas)
-- `CLAUDE_API_KEY` - Para hablar con Claude
-- `WOLFRAM_APP_ID` - Para usar Wolfram Alpha  
-- `GEMINI_API_KEY` - Para usar Gemini
-- `OPENAI_API_KEY` - Para GPT (backup)
-
-### Dónde se guardan:
-- **AWS Lambda:** Variables de entorno encriptadas
-- **Alexa Hosted:** Hardcoded en código (repo privado)
-
-## 🚀 DESPLIEGUE Y PRODUCCIÓN
-
-### Versión Activa: AWS Lambda
-- **Función:** `AlexaProfesorUniversal`
-- **Región:** us-east-1 (Virginia del Norte)
-- **Memoria:** 1024 MB
-- **Timeout:** 15 segundos
-- **Deploy:** Automático vía GitHub Actions
-
-### Cache y Persistencia
-- **S3:** Respuestas completas (TTL 7 días)
-- **DynamoDB:** Historial usuario + step-by-step
-- **Memoria:** Cache LRU para respuestas rápidas
-
-## 🎯 CASOS DE USO TÍPICOS
-
-### Pregunta Científica: "¿Qué es el sol?"
-1. Wolfram → "Estrella de tipo G, masa 1.989×10³⁰ kg..."
-2. Wikipedia → "El Sol es la estrella del sistema solar..."
-3. Gemini → "Información actualizada sobre investigación solar..."
-4. Claude → "El Sol es nuestra estrella más cercana. Con una masa de casi 2 millones de billones de billones de kilogramos..."
-
-### Ecuación Matemática: "x² + 3x - 4 = 0"
-1. Wolfram → Gráfico + soluciones: x = 1, x = -4
-2. Claude → "Esta ecuación cuadrática tiene dos soluciones..."
-3. APL → Muestra el gráfico de la parábola
-
-### Pregunta Histórica: "¿Quién fue Einstein?"
-1. Wikipedia → Biografía completa
-2. Gemini → Contexto adicional
-3. Claude → "Albert Einstein fue un físico alemán..."
-4. APL → Foto + datos clave
-
-## 🔧 MANTENIMIENTO
-
-### Logs importantes:
-- `[WOLFRAM] OK | T+1200ms | 3 imgs` - Wolfram respondió en 1.2s
-- `[CLAUDE] OK | T+800ms | Síntesis generada` - Claude sintetizó
-- `[TOTAL] 2500ms` - Respuesta completa en 2.5s
-
-### Métricas clave:
-- **Latencia objetivo:** <7.8 segundos (límite de Alexa: 8s)
-- **Cache hit rate:** ~16% de preguntas repetidas
-- **Success rate:** >95% de respuestas exitosas
-
-## 🎓 PARA DESARROLLADORES
-
-### Agregar nueva funcionalidad:
-1. Crear handler en `handlers/`
-2. ✏️ Editar código en lambda/
-3. 🚀 Deploy con `.\scripts\deploy.ps1`
-
-### Debugging:
-1. Ver logs en CloudWatch
-2. Ejecutar tests locales
-3. Usar `.\scripts\test-all.ps1`
-
-### Estructura recomendada:
-- **1 handler** = 1 tipo de pregunta
-- **1 service** = 1 API externa
-- **1 util** = 1 herramienta compartida
+# Qué Hace Cada Cosa — Profesor Universal IA
 
 ---
 
-**RESUMEN:** Es un sistema educativo inteligente que combina lo mejor de 4 IAs para crear el profesor virtual más completo del mundo, optimizado para funcionar en tiempo real a través de Alexa.
+## Las 5 IAs + 2 APIs de Imagen
+
+| Servicio | Archivo | Rol | Cuándo se usa |
+|----------|---------|-----|---------------|
+| **Claude 4.5 Haiku** | `services/claude.js` | Síntesis final — genera el speech y displayTop/Bottom | Siempre, es el "profesor" que habla |
+| **GPT-4.1 Mini** | `services/gpt.js` | Extrae keyword, convierte notación matemática | Inicio de cada request |
+| **Gemini 2.0 Flash** | `services/gemini.js` | Contexto web actualizado | Preguntas con datos recientes |
+| **Wolfram Alpha** | `services/wolfram.js` | Datos técnicos, gráficas, step-by-step | Matemáticas, física, datos numéricos |
+| **Wikipedia** | `services/wikipedia.js` | Contexto enciclopédico | Preguntas conceptuales/biográficas |
+| **NASA Images API** | `utils/imagenesExtra.js` | Imágenes científicas | Temas espaciales/científicos |
+| **Wikimedia Commons** | `utils/imagenesExtra.js` | Imágenes educativas | Temas generales |
+
+---
+
+## Handlers — Qué Procesa Cada Uno
+
+### `AskProfeIntentHandler.js` — El cerebro principal
+Procesa toda pregunta educativa general. Decide si va por ruta ESTÁTICA (conceptual) o DINÁMICA (datos actualizados/cálculos), coordina las IAs en paralelo y construye la respuesta final.
+
+**Rutas internas:**
+- `mathRoute.js` — detecta y procesa preguntas matemáticas (ecuaciones, derivadas, integrales)
+- `scienceRoute.js` — detecta y procesa preguntas científicas (física, química, astronomía)
+- Flujo normal — todo lo demás (historia, geografía, biología, etc.)
+
+### `WolframAlphaModeIntentHandler.js` — Modo paso a paso
+Activa cuando el usuario dice "modo wolfram" o toca el botón APL. Convierte lenguaje natural a notación matemática (GPT), hace 2 llamadas a Wolfram (pods normales + pasos SBS), pagina de 3 en 3 y cachea en DynamoDB.
+
+### `ContinueWolframIntentHandler.js` — Paginación
+Avanza a los siguientes 3 pasos. Lee de DynamoDB si existe caché, si no usa `sessionAttributes.wolframData`.
+
+### `SkipToResultIntentHandler.js` — Saltar al final
+Muestra directamente el último pod (resultado) sin recorrer todos los pasos.
+
+### `RepeatLastQuestionIntentHandler.js` — Repetir
+Recupera la última pregunta del historial DynamoDB del usuario y la re-procesa.
+
+---
+
+## Services — Qué Hace Cada Servicio
+
+### `apl.js` — Generador visual
+Genera el documento APL 1.6 completo. Recibe `isDark` (boolean) y devuelve el JSON del documento. Los datos llegan vía `datasources.templateData`. Soporta:
+- Header con 8 logos (estáticos)
+- Logo dinámico Wolfram sobre primer pod (cuando `fuenteWolfram=true`)
+- Pods de imágenes Wolfram con zoom dinámico
+- Botones step-by-step, continuar, saltar, ver más imágenes
+- Barra de controles: zoom ±, modo oscuro, susurro
+
+### `wolfram.js` — Wolfram Alpha
+Hace 1 o 2 llamadas según el modo:
+- **Normal:** 1 llamada, devuelve pods con imágenes + texto plano
+- **Step-by-step:** 2 llamadas — primera detecta podstate SBS, segunda lo expande
+
+Devuelve: `{ imagenes, imagenesNormales, texto, canStepByStep, stepByStepInputs }`
+
+### `claude.js` — Síntesis educativa
+Recibe: pregunta + texto Wolfram + texto Wikipedia + texto Gemini + keyword + historial
+Devuelve JSON: `{ speech, displayTop, displayBottom, keyword }`
+
+### `gpt.js` — Utilidades rápidas
+- `obtenerKeyword()` — extrae el tema principal de la pregunta
+- `traducirGPT()` — traducciones rápidas
+- Conversión notación matemática en `WolframAlphaModeIntentHandler`
+
+---
+
+## Utils — Herramientas Compartidas
+
+| Archivo | Función |
+|---------|---------|
+| `cache.js` | LRU en memoria, TTL corto, para requests repetidos en la misma sesión |
+| `s3Cache.js` | Caché persistente en S3, TTL 7 días, para preguntas conceptuales |
+| `dynamoCache.js` | Caché step-by-step por sessionId, TTL 24h |
+| `userHistory.js` | Guarda/recupera últimas 5 preguntas por userId en DynamoDB |
+| `imagenesExtra.js` | Busca imágenes en NASA Images API y Wikimedia Commons |
+| `cacheabilityAnalyzer.js` | Decide si una pregunta es cacheable y genera su cacheKey |
+| `timeoutManager.js` | `withTimeout(promise, ms, fallback)` — envuelve cualquier promesa con timeout |
+| `mathNotation.js` | Normaliza expresiones matemáticas en español a notación estándar |
+| `reconstruccionPregunta.js` | Reconstruye preguntas ambiguas usando contexto de sesión |
+| `comparacion.js` | Detecta preguntas comparativas ("compara X con Y") |
+| `fallback.js` | Mensajes de error amigables para el usuario |
+| `validateResponse.js` | Valida que el speech de Claude sea usable |
+| `inputValidator.js` | Sanitiza y valida la entrada del usuario |
+| `logger.js` | Logging estructurado con prefijos `[MÓDULO]` |
+
+---
+
+## Config
+
+### `constants.js`
+- `UI` — `MIN_ZOOM`, `MAX_ZOOM`, `ZOOM_STEP`
+- `INPUT` — `MAX_QUESTION_LENGTH`, `MIN_QUESTION_LENGTH`
+- `PERFORMANCE` — `GLOBAL_DEADLINE_MS` (7700)
+
+### `timeouts.js`
+Timeouts centralizados por servicio: `WOLFRAM_TIMEOUT`, `WIKI_TIMEOUT`, `GEMINI_TIMEOUT`, `KEYWORD_EXTRACTION_TIMEOUT`, `IMAGES_EXTRA_TIMEOUT`
+
+---
+
+## `index.js` — Punto de Entrada
+
+Registra todos los handlers y maneja:
+- `LaunchRequest` — bienvenida, inicializa sesión
+- `APLUserEventHandler` — eventos táctiles (zoom, modo oscuro, susurro, botones SBS)
+- `DarkModeIntentHandler` — "modo oscuro / modo claro"
+- `WhisperModeIntentHandler` — "modo susurro"
+- `ZoomIntentHandler` — "acercar / alejar"
+- `VerMasImagenesIntentHandler` — "ver más imágenes"
+- Helpers: `renderAPL()`, `aplDatasource()`, `normalizarModoVisual()`, `normalizarDireccionZoom()`
+
+---
+
+## Flujo de Sesión (sessionAttributes)
+
+```
+lastQuestion        ← pregunta completa del usuario
+lastKeyword         ← keyword extraído por GPT
+lastSubject         ← tema principal (para contexto en preguntas ambiguas)
+lastDisplayTop      ← texto superior APL
+lastDisplayBottom   ← texto inferior APL
+lastImagenes        ← pods Wolfram actuales (hasta 12)
+lastImagenesPasos   ← pasos SBS (hasta 20) — para botón APL sin re-llamar Wolfram
+lastFuenteWolfram   ← boolean
+lastFuenteWikipedia ← boolean
+wolframData         ← datos completos para paginación SBS
+currentWolframStep  ← índice actual en paginación SBS
+imagenesExtraPool   ← pool completo NASA/Wikimedia (hasta 30)
+imagenesExtraOffset ← índice actual del pool
+darkMode            ← boolean
+whisperMode         ← boolean
+zoomLevel           ← número (55–120, default 85)
+history             ← últimas 8 interacciones para contexto Claude
+pendingLocationRequest ← 'duracion_sol' | null
+```

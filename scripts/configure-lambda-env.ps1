@@ -47,7 +47,7 @@ Get-Content $envFile | ForEach-Object {
 }
 
 # Verificar variables críticas
-$requiredVars = @("OPENAI_API_KEY", "WOLFRAM_APP_ID", "GEMINI_API_KEY")
+$requiredVars = @("OPENAI_API_KEY", "WOLFRAM_APP_ID", "GEMINI_API_KEY", "ELEVENLABS_API_KEY")
 $missingVars = @()
 
 foreach ($var in $requiredVars) {
@@ -72,6 +72,7 @@ $envJson = @{
         OPENAI_API_KEY = $envVars["OPENAI_API_KEY"]
         WOLFRAM_APP_ID = $envVars["WOLFRAM_APP_ID"]
         GEMINI_API_KEY = $envVars["GEMINI_API_KEY"]
+        ELEVENLABS_API_KEY = $envVars["ELEVENLABS_API_KEY"]
         NODE_ENV = "production"
     }
 } | ConvertTo-Json -Compress

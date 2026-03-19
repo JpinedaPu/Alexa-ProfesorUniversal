@@ -58,6 +58,7 @@ const podsIgnorados = [
 // Pods que deben ir primero en la visualización
 const podsPrioritarios = [
     "Input interpretation",
+    "Input",
     "Plot",
     "Graph",
     "Result",
@@ -77,24 +78,102 @@ async function consultarWolfram(keyword, userLocation = null, options = {}) {
     if (!keyword) return { imagenes: [], texto: "", canStepByStep: false };
 
     const startTime = Date.now();
+    
+    // FLUJO STEP-BY-STEP: 2 llamadas con presupuesto de tiempo estricto
+    if (options.isStepByStep) {
+        // Presupuesto total: 4500ms para dejar ~3s a Claude
+        const BUDGET_TOTAL = options.timeoutMs || 4500;
+        const TIMEOUT_CALL1 = Math.min(3000, BUDGET_TOTAL - 1000);
+
+        console.log(`[WOLFRAM] Modo step-by-step | budget: ${BUDGET_TOTAL}ms`);
+
+        // LLAMADA 1 con timeout ajustado
+        const firstResult = await Promise.race([
+            consultarWolframInternal(keyword, userLocation, null, startTime, null, TIMEOUT_CALL1),
+            new Promise(r => setTimeout(() => r({ imagenes: [], texto: '', canStepByStep: false, stepByStepData: [] }), TIMEOUT_CALL1))
+        ]);
+
+        const elapsed1 = Date.now() - startTime;
+
+        if (!firstResult.stepByStepData || firstResult.stepByStepData.length === 0) {
+            console.log(`[WOLFRAM] Sin podstate | T+${elapsed1}ms | devolviendo resultado normal`);
+            return firstResult;
+        }
+
+        // Elegir el mejor podstate para la llamada 2:
+        // Preferir el pod cuyo id sea 'Input' — ese es siempre el resultado principal (Derivative, Result, etc.)
+        // Si no existe 'Input', tomar el primero con isPrimary:true
+        // NUNCA filtrar por podId !== 'Input' — 'Input' ES el id del pod Derivative en Wolfram
+        const candidatos = firstResult.stepByStepData;
+        const mejorPod = candidatos.find(d => d.podId === 'Input')
+            || candidatos.find(d => d.isPrimary)
+            || candidatos[0];
+
+        // Tiempo restante para llamada 2
+        const remainingMs = BUDGET_TOTAL - elapsed1;
+        if (remainingMs < 800) {
+            console.log(`[WOLFRAM] Sin tiempo para llamada 2 (${remainingMs}ms) | usando imgs normales`);
+            return { ...firstResult, imagenesNormales: firstResult.imagenes, canStepByStep: true };
+        }
+
+        const TIMEOUT_CALL2 = Math.min(remainingMs - 200, 2800);
+        const sbsInput = mejorPod.input;
+        const podId = mejorPod.podId;
+        const showAllInput = sbsInput.replace('Step-by-step solution', 'Show all steps');
+        console.log(`[WOLFRAM] Llamada 2 podstates: [${sbsInput}] + [${showAllInput}] | timeout: ${TIMEOUT_CALL2}ms`);
+
+        // LLAMADA 2: pasar podId para que extraerPasosSBS sepa qué pod buscar
+        const stepResult = await Promise.race([
+            consultarWolframInternal(keyword, userLocation, [sbsInput, showAllInput], startTime, podId, TIMEOUT_CALL2),
+            new Promise(r => setTimeout(() => r({ imagenes: [], texto: '' }), TIMEOUT_CALL2))
+        ]);
+
+        console.log(`[WOLFRAM] SBS total T+${Date.now() - startTime}ms | steps: ${stepResult.imagenes?.length ?? 0}`);
+
+        const sbsOk = (stepResult.imagenes?.length ?? 0) > 0;
+        return {
+            imagenes: sbsOk ? stepResult.imagenes : [],
+            imagenesNormales: firstResult.imagenes,
+            texto: firstResult.texto,
+            textoResult: firstResult.textoResult,
+            canStepByStep: sbsOk,
+            stepByStepInputs: firstResult.stepByStepData.map(d => d.input)
+        };
+    }
+    
+    // Llamada normal (sin step-by-step)
+    return consultarWolframInternal(keyword, userLocation, null, startTime);
+}
+
+/**
+ * Función interna que hace la llamada real a Wolfram Alpha
+ * @param {string} keyword - Término de búsqueda
+ * @param {string} userLocation - Ubicación del usuario (opcional)
+ * @param {string} podstate - Podstate para step-by-step (opcional)
+ * @param {number} startTime - Timestamp de inicio
+ * @param {string} targetPodId - ID del pod que queremos extraer (opcional, solo para step-by-step)
+ * @returns {Promise<Object>}
+ */
+function consultarWolframInternal(keyword, userLocation, podstate, startTime, targetPodId = null, timeoutMs = 5000) {
     return new Promise((resolve) => {
         const q = encodeURIComponent(keyword);
         const locationParam = userLocation ? `&location=${encodeURIComponent(userLocation)}` : '';
-        // Según documentación oficial: podstate para step-by-step debe incluir el ID del pod
-        // Formato: podstate=PodID__StateName (ej: Result__Step-by-step+solution)
-        // Per WA docs: podstate format is PodID__StateName. Use multiple podstate params
-        // to cover all possible pod IDs that may contain step-by-step (Result, Solve, etc.)
-        const stepByStepParam = options.isStepByStep
-            ? '&podstate=Result__Step-by-step+solution&podstate=Solve__Step-by-step+solution&reinterpret=true'
-            : '';
-        const url = `https://api.wolframalpha.com/v2/query?appid=${WOLFRAM_APP_ID}&input=${q}&output=json&format=image,plaintext&mag=2&width=800&units=metric${locationParam}${stepByStepParam}&scantimeout=3&podtimeout=3&formattimeout=2&parsetimeout=2`;
+        // podstate puede ser string (llamada normal) o array (llamada step-by-step con múltiples podstates)
+        const podstateParam = Array.isArray(podstate)
+            ? podstate.map(ps => `&podstate=${encodeURIComponent(ps)}`).join('')
+            : (podstate ? `&podstate=${encodeURIComponent(podstate)}` : '');
+        // scantimeout/podtimeout ajustados al presupuesto disponible
+        const wScan = Math.min(2, Math.floor(timeoutMs / 2000));
+        const url = `https://api.wolframalpha.com/v2/query?appid=${WOLFRAM_APP_ID}&input=${q}&output=json&format=image,plaintext&mag=2&width=800&units=metric${locationParam}${podstateParam}&scantimeout=${wScan}&podtimeout=${wScan}&formattimeout=1.5&parsetimeout=1.5`;
 
         const httpsOptions = {
             headers: { 'User-Agent': 'AlexaSkill/1.0' },
-            timeout: 5500
+            timeout: timeoutMs
         };
 
-        console.log(`[WOLFRAM] ⏱️ T+0ms | Full API optimizada: "${keyword}"`);
+        const logPrefix = podstate ? '[WOLFRAM-STEP]' : '[WOLFRAM]';
+        const podstateLog = Array.isArray(podstate) ? podstate.join(' + ') : (podstate || '');
+        console.log(`${logPrefix} ⏱️ T+0ms | Query: "${keyword}"${podstateLog ? ' | podstate: ' + podstateLog : ''}`);
 
         const req = https.get(url, httpsOptions, (res) => {
             let data = '';
@@ -112,82 +191,108 @@ async function consultarWolfram(keyword, userLocation = null, options = {}) {
                     let textoExtraido = "";
                     let textoResult = "";
                     let canStepByStep = false;
+                    let stepByStepData = []; // Array de {input, podId}
 
                     // --- VALIDACIÓN CRÍTICA: success === true y pods ---
                     if (json.queryresult && json.queryresult.success && json.queryresult.pods) {
                         if (!Array.isArray(json.queryresult.pods)) {
-                            console.log(`[WOLFRAM] ⚠️ Pods no es array`);
-                            return resolve({ imagenes: [], texto: "" });
+                            console.log(`${logPrefix} ⚠️ Pods no es array`);
+                            return resolve({ imagenes: [], texto: "", canStepByStep: false, stepByStepInputs: [] });
                         }
                         const pods = json.queryresult.pods.slice(0, 20);
-                        pods.forEach(pod => {
-                            // Detectar si hay solución paso a paso disponible en cualquier pod
-                            if (pod.states && Array.isArray(pod.states)) {
-                                const hasStepByStep = pod.states.some(state => 
-                                    state.name && state.name.toLowerCase().includes('step-by-step')
-                                );
-                                if (hasStepByStep) canStepByStep = true;
-                            }
-                            // Ignorar solo pods basura real
-                            if (podsIgnorados.includes(pod.title)) return;
-                            if (pod.subpods) {
-                                pod.subpods.forEach(subpod => {
-                                    // Limitar texto a 1200 caracteres y subpod.plaintext a 300
-                                    if (subpod.plaintext && subpod.plaintext.trim().length > 0) {
-                                        if (textoExtraido.length < 1200 && subpod.plaintext.length < 300) {
-                                            textoExtraido += `${pod.title}: ${subpod.plaintext}. `;
-                                        }
-                                    }
-                                    // Si es el pod Result y no hay texto, intenta extraer alt de la imagen
-                                    if (pod.title === "Result" && (!subpod.plaintext || subpod.plaintext.trim().length === 0) && subpod.img && subpod.img.alt) {
-                                        textoResult = subpod.img.alt;
-                                    }
-                                    // Filtrar imágenes pequeñas y priorizar visualmente
-                                    if (
-                                        subpod.img &&
-                                        subpod.img.src &&
-                                        parseInt(subpod.img.width || 0) > 50
-                                    ) {
-                                        const imgData = {
-                                            titulo: pod.title || "Datos Técnicos",
+
+                        // LLAMADA 2 (SBS): extraer subpods del pod expandido con los pasos
+                        // Wolfram repite todos los pods normales + el pod expandido con pasos.
+                        // Puede haber múltiples pods con primary:true — el expandido es el que tiene MÁS subpods.
+                        // Fallback: buscar por targetPodId, luego cualquier primary.
+                        if (podstate) {
+                            const primaries = pods.filter(p => p.primary === true);
+                            const podPrimary = primaries.length > 1
+                                ? primaries.reduce((a, b) => (b.subpods?.length ?? 0) > (a.subpods?.length ?? 0) ? b : a)
+                                : (primaries[0] ?? pods.find(p => p.id === targetPodId) ?? pods[0]);
+                            if (podPrimary?.subpods) {
+                                podPrimary.subpods.forEach(subpod => {
+                                    if (!subpod.img?.src) return;
+                                    const sbsType = subpod.stepbystepcontenttype;
+                                    // Incluir si: tiene tipo SBS explícito, O si no tiene tipo pero tiene tamaño razonable
+                                    const incluir = sbsType
+                                        ? (sbsType === 'SBSStep' || sbsType === 'SBSHintStep')
+                                        : parseInt(subpod.img.width || 0) > 50;
+                                    if (incluir) {
+                                        imagenesPrioritarias.push({
+                                            titulo: podPrimary.title || 'Solución',
                                             url: subpod.img.src,
                                             width: parseInt(subpod.img.width) || 800,
-                                            height: parseInt(subpod.img.height) || 400
+                                            height: parseInt(subpod.img.height) || 400,
+                                            alt: subpod.img.alt || ''
+                                        });
+                                    }
+                                });
+                            }
+                            console.log(`${logPrefix} ✅ OK | T+${elapsed}ms | ${imagenesPrioritarias.length} imgs SBS del pod primary`);
+                            return resolve({ imagenes: imagenesPrioritarias, texto: '', textoResult: '', canStepByStep: false, stepByStepData: [] });
+                        }
+
+                        // LLAMADA 1 (normal): procesar todos los pods
+                        pods.forEach(pod => {
+                            // Detectar podstate SBS — buscar en pod primary primero (orden garantizado)
+                            if (pod.states && Array.isArray(pod.states)) {
+                                pod.states.forEach(state => {
+                                    if (state.name && state.name.toLowerCase().includes('step-by-step') && state.input) {
+                                        canStepByStep = true;
+                                        stepByStepData.push({ input: state.input, podId: pod.id, isPrimary: !!pod.primary });
+                                        console.log(`${logPrefix} ✅ Podstate: ${state.input} | primary: ${!!pod.primary}`);
+                                    }
+                                });
+                            }
+
+                            if (podsIgnorados.includes(pod.title)) return;
+
+                            if (pod.subpods) {
+                                pod.subpods.forEach(subpod => {
+                                    if (subpod.plaintext?.trim().length > 0 && textoExtraido.length < 1200 && subpod.plaintext.length < 300) {
+                                        textoExtraido += `${pod.title}: ${subpod.plaintext}. `;
+                                    }
+                                    if (pod.title === 'Result' && !subpod.plaintext?.trim() && subpod.img?.alt) {
+                                        textoResult = subpod.img.alt;
+                                    }
+                                    if (subpod.img?.src && parseInt(subpod.img.width || 0) > 50) {
+                                        const imgData = {
+                                            titulo: pod.title || 'Datos Técnicos',
+                                            url: subpod.img.src,
+                                            width: parseInt(subpod.img.width) || 800,
+                                            height: parseInt(subpod.img.height) || 400,
+                                            alt: subpod.img.alt || ''
                                         };
-                                        if (podsPrioritarios.includes(pod.title)) {
-                                            imagenesPrioritarias.push(imgData);
-                                        } else {
-                                            imagenesNormales.push(imgData);
-                                        }
+                                        if (podsPrioritarios.includes(pod.title)) imagenesPrioritarias.push(imgData);
+                                        else imagenesNormales.push(imgData);
                                     }
                                 });
                             }
                         });
                         let todosLosPods = [...imagenesPrioritarias, ...imagenesNormales];
-                        // Subpods pueden multiplicar imágenes — limitar a 20
                         if (todosLosPods.length > 20) todosLosPods = todosLosPods.slice(0, 20);
-                        // Corte global de texto para máxima seguridad
                         textoExtraido = textoExtraido.slice(0, 1200);
-                        console.log(`[WOLFRAM] ✅ OK | T+${elapsed}ms | ${todosLosPods.length} imgs (de ${json.queryresult.pods.length} pods) | ${textoExtraido.length} chars | textoResult: ${textoResult} | canStepByStep: ${canStepByStep}`);
-                        resolve({ imagenes: todosLosPods, texto: textoExtraido, textoResult, canStepByStep });
+                        console.log(`${logPrefix} ✅ OK | T+${elapsed}ms | ${todosLosPods.length} imgs (de ${json.queryresult.pods.length} pods) | ${textoExtraido.length} chars | canStepByStep: ${canStepByStep} | podstates: ${stepByStepData.length}`);
+                        resolve({ imagenes: todosLosPods, texto: textoExtraido, textoResult, canStepByStep, stepByStepData });
                     } else {
-                        console.log(`[WOLFRAM] ⚠️ NO_PODS | T+${elapsed}ms`);
-                        resolve({ imagenes: [], texto: "", canStepByStep: false });
+                        console.log(`${logPrefix} ⚠️ NO_PODS | T+${elapsed}ms`);
+                        resolve({ imagenes: [], texto: "", canStepByStep: false, stepByStepInputs: [] });
                     }
                 } catch (e) {
-                    console.log(`[WOLFRAM] ❌ ERR_PARSE | T+${elapsed}ms | ${e.message}`);
-                    resolve({ imagenes: [], texto: "", canStepByStep: false });
+                    console.log(`${logPrefix} ❌ ERR_PARSE | T+${elapsed}ms | ${e.message}`);
+                    resolve({ imagenes: [], texto: "", canStepByStep: false, stepByStepInputs: [] });
                 }
             });
         });
         req.on('timeout', () => {
-            console.log(`[WOLFRAM] ❌ ERR_TIMEOUT | T+${Date.now() - startTime}ms | Límite: 5500ms`);
+            console.log(`${logPrefix} ❌ ERR_TIMEOUT | T+${Date.now() - startTime}ms | Límite: 5500ms`);
             req.destroy();
-            resolve({ imagenes: [], texto: "", canStepByStep: false });
+            resolve({ imagenes: [], texto: "", canStepByStep: false, stepByStepInputs: [] });
         });
         req.on('error', (e) => {
-            console.log(`[WOLFRAM] ❌ ERR_NET | T+${Date.now() - startTime}ms | ${e.message}`);
-            resolve({ imagenes: [], texto: "", canStepByStep: false });
+            console.log(`${logPrefix} ❌ ERR_NET | T+${Date.now() - startTime}ms | ${e.message}`);
+            resolve({ imagenes: [], texto: "", canStepByStep: false, stepByStepInputs: [] });
         });
     });
 }

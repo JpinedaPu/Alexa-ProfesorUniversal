@@ -34,6 +34,9 @@ const { detectarComparacion } = require('../utils/comparacion');
 const { consultarWikipedia } = require('../services/wikipedia');
 const { consultarWolfram } = require('../services/wolfram');
 const { buscarImagenesExtra } = require('../utils/imagenesExtra');
+const { esPreguntaMatematica, ejecutarRutaMatematica, formatearTituloMatematico } = require('./mathRoute');
+const { esPreguntaCientifica, ejecutarRutaCientifica } = require('./scienceRoute');
+const { normalizarNotacionMatematica } = require('../utils/mathNotation');
 
 // Expresiones regulares para detección de tipos de pregunta específicos
 const periodoKeywords = /\b(periodo|mandato|presidencia|gobierno|administraci[oó]n)\b/i;
@@ -319,28 +322,157 @@ const AskProfeIntentHandler = {
         if (!keyword || keyword.length < INPUT.MIN_QUESTION_LENGTH) keyword = question;
         
         // Sanitizar keyword para Wolfram: traducir expresiones matemáticas en español a notación estándar
-        keyword = keyword
-            .replace(/\bx\s+al\s+cubo\b/gi, 'x^3')
-            .replace(/\bx\s+al\s+cuadrado\b/gi, 'x^2')
-            .replace(/\b(\w+)\s+al\s+cubo\b/gi, '$1^3')
-            .replace(/\b(\w+)\s+al\s+cuadrado\b/gi, '$1^2')
-            .replace(/\b(\w+)\s+a\s+la\s+(\d+)\b/gi, '$1^$2')
-            .replace(/\bmas\b/gi, '+')
-            .replace(/\bmenos\b/gi, '-')
-            .replace(/\bpor\b/gi, '*')
-            .replace(/\bentre\b/gi, '/')
-            .replace(/\braiz\s+de\b/gi, 'sqrt')
-            .replace(/\bseno\b/gi, 'sin')
-            .replace(/\bcoseno\b/gi, 'cos')
-            .replace(/\btangente\b/gi, 'tan')
-            .replace(/\blogaritmo\b/gi, 'log')
-            .replace(/\bcuando\s+x\s+tiende\s+a\s+infinito\b/gi, 'as x approaches infinity')
-            .replace(/\bcuando\s+x\s+tiende\s+a\s+(\w+)\b/gi, 'as x approaches $1')
-            .replace(/\btiende\s+a\s+infinito\b/gi, 'approaches infinity')
-            .replace(/\btiende\s+a\s+(\w+)\b/gi, 'approaches $1')
-            .replace(/\bcuando\b/gi, '')
-            .replace(/\s+/g, ' ').trim();
+        keyword = normalizarNotacionMatematica(keyword);
         console.log(`[KEYWORD] "${keyword}" | T+${Date.now() - startTime}ms`);
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // RUTAS ESPECIALIZADAS: Matemática y Científica
+        // ═══════════════════════════════════════════════════════════════════════════
+        
+        // Detectar si es pregunta matemática
+        if (esPreguntaMatematica(question)) {
+            console.log('[ROUTE] Detectada pregunta MATEMÁTICA');
+            try {
+                const resultadoMath = await ejecutarRutaMatematica(question, keyword, startTime);
+                if (resultadoMath) {
+                    // Aplicar whisper mode si está activo
+                    let speechOutput = resultadoMath.speech;
+                    if (sessionAttributes.whisperMode)
+                        speechOutput = `<amazon:effect name="whispered">${speechOutput.replace(/<[^>]+>/g, '')}</amazon:effect>`;
+                    
+                    // Actualizar sesión
+                    sessionAttributes.lastQuestion = question;
+                    sessionAttributes.lastSubject = resultadoMath.keyword;
+                    sessionAttributes.lastKeyword = keyword;
+                    sessionAttributes.lastDisplayTop = resultadoMath.displayTop;
+                    sessionAttributes.lastDisplayBottom = resultadoMath.displayBottom;
+                    sessionAttributes.lastImagenes = resultadoMath.imagenes.slice(0, 12);
+                    sessionAttributes.lastImagenesPasos = (resultadoMath.imagenesPasos || []).slice(0, 20);
+                    sessionAttributes.lastFuenteWolfram = true;
+                    sessionAttributes.lastFuenteWikipedia = false;
+                    sessionAttributes.history.push(
+                        { role: 'user', content: question },
+                        { role: 'assistant', content: resultadoMath.speech }
+                    );
+                    sessionAttributes.history = sessionAttributes.history.slice(-8);
+                    attributesManager.setSessionAttributes(sessionAttributes);
+                    
+                    // Guardar historial
+                    const userId = handlerInput.requestEnvelope.session.user.userId;
+                    guardarPregunta(userId, question, keyword).catch(e => console.log('[HISTORY] Error:', e.message));
+                    
+                    console.log(`[MATH-ROUTE] Completada | T+${Date.now() - startTime}ms`);
+                    
+                    // Renderizar APL
+                    const supportedInterfaces = Alexa.getSupportedInterfaces(handlerInput.requestEnvelope);
+                    if (supportedInterfaces['Alexa.Presentation.APL']) {
+                        try {
+                            handlerInput.responseBuilder.addDirective({
+                                type: 'Alexa.Presentation.APL.RenderDocument',
+                                token: 'profDoc',
+                                document: generarAPL(sessionAttributes.darkMode),
+                                datasources: {
+                                    templateData: {
+                                        titulo: resultadoMath.tituloAPL || formatearTituloMatematico(keyword),
+                                        textoSuperior: resultadoMath.displayTop,
+                                        textoInferior: resultadoMath.displayBottom,
+                                        imagenes: resultadoMath.imagenes.slice(0, 12),
+                                        imagenesExtra: [],
+                                        fuenteWolfram: true,
+                                        fuenteWikipedia: false,
+                                        fuenteGoogle: false,
+                                        canStepByStep: resultadoMath.canStepByStep,
+                                        masPasosDisponibles: false,
+                                        hayMasImagenes: false,
+                                        keyword,
+                                        originalQuestion: question,
+                                        originalQuestionEn: questionEn,
+                                        zoomLevel: sessionAttributes.zoomLevel
+                                    }
+                                }
+                            });
+                        } catch (aplError) { console.log('[APL] Error:', aplError.message); }
+                    }
+                    
+                    return handlerInput.responseBuilder.speak(speechOutput).reprompt('Algo mas?').getResponse();
+                }
+            } catch (mathError) {
+                console.error('[MATH-ROUTE] Error:', mathError);
+                // Continuar con flujo normal si falla
+            }
+        }
+        
+        // Detectar si es pregunta científica
+        if (esPreguntaCientifica(question)) {
+            console.log('[ROUTE] Detectada pregunta CIENTÍFICA');
+            try {
+                const resultadoScience = await ejecutarRutaCientifica(question, keyword);
+                if (resultadoScience) {
+                    let speechOutput = resultadoScience.speech;
+                    if (sessionAttributes.whisperMode)
+                        speechOutput = `<amazon:effect name="whispered">${speechOutput.replace(/<[^>]+>/g, '')}</amazon:effect>`;
+                    
+                    sessionAttributes.lastQuestion = question;
+                    sessionAttributes.lastSubject = resultadoScience.keyword;
+                    sessionAttributes.lastKeyword = keyword;
+                    sessionAttributes.lastDisplayTop = resultadoScience.displayTop;
+                    sessionAttributes.lastDisplayBottom = resultadoScience.displayBottom;
+                    sessionAttributes.lastImagenes = resultadoScience.imagenes.slice(0, 12);
+                    sessionAttributes.lastFuenteWolfram = true;
+                    sessionAttributes.lastFuenteWikipedia = true;
+                    sessionAttributes.history.push(
+                        { role: 'user', content: question },
+                        { role: 'assistant', content: resultadoScience.speech }
+                    );
+                    sessionAttributes.history = sessionAttributes.history.slice(-8);
+                    attributesManager.setSessionAttributes(sessionAttributes);
+                    
+                    const userId = handlerInput.requestEnvelope.session.user.userId;
+                    guardarPregunta(userId, question, keyword).catch(e => console.log('[HISTORY] Error:', e.message));
+                    
+                    console.log(`[SCIENCE-ROUTE] Completada | T+${Date.now() - startTime}ms`);
+                    
+                    const supportedInterfaces = Alexa.getSupportedInterfaces(handlerInput.requestEnvelope);
+                    if (supportedInterfaces['Alexa.Presentation.APL']) {
+                        try {
+                            handlerInput.responseBuilder.addDirective({
+                                type: 'Alexa.Presentation.APL.RenderDocument',
+                                token: 'profDoc',
+                                document: generarAPL(sessionAttributes.darkMode),
+                                datasources: {
+                                    templateData: {
+                                        titulo: `Ciencia: ${keyword}`,
+                                        textoSuperior: resultadoScience.displayTop,
+                                        textoInferior: resultadoScience.displayBottom,
+                                        imagenes: resultadoScience.imagenes.slice(0, 12),
+                                        imagenesExtra: [],
+                                        fuenteWolfram: true,
+                                        fuenteWikipedia: true,
+                                        fuenteGoogle: false,
+                                        canStepByStep: false,
+                                        masPasosDisponibles: false,
+                                        hayMasImagenes: false,
+                                        keyword,
+                                        originalQuestion: question,
+                                        originalQuestionEn: questionEn,
+                                        zoomLevel: sessionAttributes.zoomLevel
+                                    }
+                                }
+                            });
+                        } catch (aplError) { console.log('[APL] Error:', aplError.message); }
+                    }
+                    
+                    return handlerInput.responseBuilder.speak(speechOutput).reprompt('Algo mas?').getResponse();
+                }
+            } catch (scienceError) {
+                console.error('[SCIENCE-ROUTE] Error:', scienceError);
+                // Continuar con flujo normal si falla
+            }
+        }
+        
+        // ═══════════════════════════════════════════════════════════════════════════
+        // FLUJO NORMAL: Preguntas generales
+        // ═══════════════════════════════════════════════════════════════════════════
 
         // Iniciar tareas asíncronas para optimizar tiempo de respuesta
         const tituloIA_Promise = traducirTituloVisual(keyword);
