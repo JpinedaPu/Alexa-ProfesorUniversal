@@ -75,52 +75,61 @@ function clasificarProblemaMatematico(pregunta) {
  */
 async function ejecutarRutaMatematica(pregunta, keyword, startTime = Date.now()) {
   console.log('[MATH-ROUTE] Iniciando ruta matemática');
-  
+
   const tipo = clasificarProblemaMatematico(pregunta);
   console.log(`[MATH-ROUTE] Tipo detectado: ${tipo}`);
 
   const elapsed = Date.now() - startTime;
+  // Budget total para las 2 llamadas Wolfram
   const wolframBudget = Math.max(3000, 5500 - elapsed);
 
-  // Llamada 1 (normal) y Claude en paralelo para ganar tiempo
-  // Llamada 2 (SBS) se hace después con el tiempo restante
-  const wolfram = await consultarWolfram(keyword, null, { isStepByStep: true, timeoutMs: wolframBudget });
-  
-  // imagenesNormales = pods resultado (llamada 1)
-  // imagenes = SBSStep/SBSHintStep (llamada 2)
-  const imagenesNormales = wolfram?.imagenesNormales || [];
-  const imagenesPasos    = wolfram?.canStepByStep ? (wolfram?.imagenes || []) : [];
-  const imagenesVista = imagenesNormales.length > 0 ? imagenesNormales : (wolfram?.imagenes || []);
+  // FASE 1: Llamada normal a Wolfram (sin SBS) — solo para obtener texto + imágenes normales
+  // Timeout agresivo: máximo 2500ms para dejar tiempo a Claude y SBS
+  const FASE1_TIMEOUT = Math.min(2500, wolframBudget - 1000);
+  const wolframFase1 = await consultarWolfram(keyword, null, { isStepByStep: false, timeoutMs: FASE1_TIMEOUT });
 
-  if (!wolfram || imagenesVista.length === 0) {
-    console.log('[MATH-ROUTE] Wolfram sin resultados, fallback a ruta normal');
+  if (!wolframFase1 || wolframFase1.imagenes.length === 0) {
+    console.log('[MATH-ROUTE] Wolfram fase1 sin resultados, fallback a ruta normal');
     return null;
   }
-  
-  console.log(`[MATH-ROUTE] Wolfram OK: normales=${imagenesVista.length} pasos=${imagenesPasos.length} canSBS=${wolfram.canStepByStep} | T+${Date.now() - startTime}ms`);
-  
-  const textoResultado = wolfram.texto || wolfram.textoResult || '';
 
-  // Claude con el tiempo restante (mínimo 2500ms)
-  const claudeBudget = Math.max(2500, 7500 - (Date.now() - startTime));
-  const claudeResponse = await consultarClaude(
+  const textoResultado = wolframFase1.texto || wolframFase1.textoResult || '';
+  const elapsedFase1 = Date.now() - startTime;
+  console.log(`[MATH-ROUTE] Wolfram fase1 OK: ${wolframFase1.imagenes.length} imgs | canSBS=${wolframFase1.canStepByStep} | T+${elapsedFase1}ms`);
+
+  // FASE 2: Claude + Wolfram SBS EN PARALELO
+  // Claude arranca con el texto de fase1 — no necesita esperar los pasos
+  // Wolfram SBS busca los pasos para el botón APL
+  const claudeBudget = Math.max(2000, 7600 - elapsedFase1 - 200);
+  const sbsBudget    = Math.max(1500, 7600 - elapsedFase1 - claudeBudget - 100);
+
+  const claudePromise = consultarClaude(
     pregunta, textoResultado, '', '', keyword, [],
-    { timeout: claudeBudget, wolframResultado: textoResultado }
+    { timeout: claudeBudget }
   );
-  
-  const speech = claudeResponse?.speech || 'Aquí está la solución matemática.';
-  const displayBottom = claudeResponse?.displayBottom || claudeResponse?.displayTop || '';
-  const tituloAPL = formatearTituloMatematico(keyword);
-  
-  console.log(`[MATH-ROUTE] Completada | T+${Date.now() - startTime}ms`);
+
+  // Solo lanzar SBS si Wolfram detectó podstate en fase1
+  const sbsPromise = wolframFase1.canStepByStep
+    ? consultarWolfram(keyword, null, { isStepByStep: true, timeoutMs: sbsBudget + FASE1_TIMEOUT })
+    : Promise.resolve(null);
+
+  const [claudeResponse, wolframSBS] = await Promise.all([claudePromise, sbsPromise]);
+
+  const imagenesPasos  = wolframSBS?.canStepByStep ? (wolframSBS.imagenes || []) : [];
+  const imagenesVista  = wolframFase1.imagenes;
+  const tituloAPL      = formatearTituloMatematico(keyword);
+  const speech         = claudeResponse?.speech || 'Aquí está la solución matemática.';
+  const displayBottom  = claudeResponse?.displayBottom || claudeResponse?.displayTop || '';
+
+  console.log(`[MATH-ROUTE] Completada | pasos=${imagenesPasos.length} canSBS=${wolframFase1.canStepByStep} | T+${Date.now() - startTime}ms`);
 
   return {
     speech,
     displayTop: tituloAPL,
-    displayBottom: displayBottom,
+    displayBottom,
     imagenes: imagenesVista,
     imagenesPasos,
-    canStepByStep: wolfram.canStepByStep || imagenesPasos.length > 0,
+    canStepByStep: wolframFase1.canStepByStep,
     tipo,
     keyword,
     tituloAPL
