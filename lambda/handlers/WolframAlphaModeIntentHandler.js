@@ -263,40 +263,40 @@ INSTRUCCIONES — responde SOLO con JSON válido:
                 sessionAttributes.currentWolframStep = 0;
                 console.log(`[WOLF-MODE] Datos inyectados: ${wolfram.imagenes.length} pasos | keyword: ${keyword}`);
             } else {
-                // PASO CRUCIAL: Convertir lenguaje natural -> notación matemática para Wolfram
+                // Lanzar conversión GPT y Progressive Response en paralelo para ganar ~1.5s
                 console.log(`[WOLF-MODE] Convirtiendo query a notación matemática: "${keyword}"`);
-                keywordMath = await withTimeout(
-                    convertirANotacionMatematica(keyword),
-                    2800,
-                    keyword
-                );
+                const conversionPromise = withTimeout(convertirANotacionMatematica(keyword), 2800, keyword);
+
+                const progressivePromise = (async () => {
+                    try {
+                        const buyingTimeMessages = [
+                            "Procesando tu ecuación matemática... un momento.",
+                            "Consultando a Wolfram Alpha para darte la solución paso a paso...",
+                            "Pidiendo los pasos a Wolfram Alpha, esto puede tomar unos segundos...",
+                            "Analizando la expresión matemática... ya casi lo tengo."
+                        ];
+                        const randomMsg = buyingTimeMessages[Math.floor(Math.random() * buyingTimeMessages.length)];
+                        if (handlerInput.serviceClientFactory) {
+                            const directiveServiceClient = handlerInput.serviceClientFactory.getDirectiveServiceClient();
+                            await directiveServiceClient.enqueue(
+                                { header: { requestId: handlerInput.requestEnvelope.request.requestId }, directive: { type: "VoicePlayer.Speak", speech: randomMsg } },
+                                handlerInput.requestEnvelope.context.System.apiEndpoint,
+                                handlerInput.requestEnvelope.context.System.apiAccessToken
+                            );
+                        }
+                    } catch (err) {
+                        console.log('[WOLF-MODE] Progressive response no disponible:', err.message);
+                    }
+                })();
+
+                [keywordMath] = await Promise.all([conversionPromise, progressivePromise]);
                 console.log(`[WOLF-MODE] Query final para Wolfram: "${keywordMath}"`);
 
-                // --- PROGRESSIVE RESPONSE ---
-                try {
-                    const buyingTimeMessages = [
-                        "Procesando tu ecuación matemática... un momento.",
-                        "Consultando a Wolfram Alpha para darte la solución paso a paso...",
-                        "Pidiendo los pasos a Wolfram Alpha, esto puede tomar unos segundos...",
-                        "Analizando la expresión matemática... ya casi lo tengo."
-                    ];
-                    const randomMsg = buyingTimeMessages[Math.floor(Math.random() * buyingTimeMessages.length)];
-                    if (handlerInput.serviceClientFactory) {
-                        const directiveServiceClient = handlerInput.serviceClientFactory.getDirectiveServiceClient();
-                        await directiveServiceClient.enqueue(
-                            { header: { requestId: handlerInput.requestEnvelope.request.requestId }, directive: { type: "VoicePlayer.Speak", speech: randomMsg } },
-                            handlerInput.requestEnvelope.context.System.apiEndpoint,
-                            handlerInput.requestEnvelope.context.System.apiAccessToken
-                        );
-                    }
-                } catch (err) {
-                    console.log('[WOLF-MODE] Progressive response no disponible:', err.message);
-                }
-
-                // 3. Traducir la pregunta a notación matemática y consultar Wolfram con podstate correcto
+                // Budget: 7800ms total - elapsed - 3500ms para Claude = tiempo para Wolfram
+                const wolframBudget = Math.max(3500, 7800 - (Date.now() - startTime) - 3500);
                 wolfram = await withTimeout(
-                    consultarWolfram(keywordMath, null, { isStepByStep: true }),
-                    6500,
+                    consultarWolfram(keywordMath, null, { isStepByStep: true, timeoutMs: wolframBudget }),
+                    wolframBudget + 300,
                     { imagenes: [], texto: '', canStepByStep: false }
                 );
 
@@ -386,9 +386,10 @@ INSTRUCCIONES — responde SOLO con JSON válido:
 - "displayBottom": qué viene después o dato útil en español (ej: "Siguiente: agregar la constante de integración")
 - Sin símbolos unicode (², √, π, ∞). TODO en ESPAÑOL.`;
 
+            const claudeBudget = Math.max(2500, 7800 - (Date.now() - startTime) - 200);
             const sintesisResult = await withTimeout(
-                consultarClaude(keyword, textoES, '', '', keyword, [], { prompt: promptRespuesta, timeout: 4000 }),
-                4500,
+                consultarClaude(keyword, textoES, '', '', keyword, [], { prompt: promptRespuesta, timeout: claudeBudget }),
+                claudeBudget + 300,
                 { speech: 'Aquí tienes los pasos de la solución.', displayTop: `Paso ${currentStep + 1}`, displayBottom: '', keyword }
             );
 

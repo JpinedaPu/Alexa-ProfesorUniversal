@@ -163,7 +163,8 @@ function consultarWolframInternal(keyword, userLocation, podstate, startTime, ta
             ? podstate.map(ps => `&podstate=${encodeURIComponent(ps)}`).join('')
             : (podstate ? `&podstate=${encodeURIComponent(podstate)}` : '');
         // scantimeout/podtimeout ajustados al presupuesto disponible
-        const wScan = Math.min(2, Math.floor(timeoutMs / 2000));
+        // Para SBS (podstate presente) necesitamos al menos 3s internos
+        const wScan = podstate ? Math.min(4, Math.max(2, Math.floor(timeoutMs / 1000) - 1)) : Math.min(2, Math.floor(timeoutMs / 2000));
         const url = `https://api.wolframalpha.com/v2/query?appid=${WOLFRAM_APP_ID}&input=${q}&output=json&format=image,plaintext&mag=2&width=800&units=metric${locationParam}${podstateParam}&scantimeout=${wScan}&podtimeout=${wScan}&formattimeout=1.5&parsetimeout=1.5`;
 
         const httpsOptions = {

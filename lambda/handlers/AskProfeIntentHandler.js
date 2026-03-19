@@ -334,7 +334,9 @@ const AskProfeIntentHandler = {
             console.log('[ROUTE] Detectada pregunta MATEMÁTICA');
             try {
                 const resultadoMath = await ejecutarRutaMatematica(question, keyword, startTime);
-                if (resultadoMath) {
+                if (!resultadoMath) {
+                    sessionAttributes._wolframYaFallo = true;
+                } else {
                     // Aplicar whisper mode si está activo
                     let speechOutput = resultadoMath.speech;
                     if (sessionAttributes.whisperMode)
@@ -398,7 +400,6 @@ const AskProfeIntentHandler = {
                 }
             } catch (mathError) {
                 console.error('[MATH-ROUTE] Error:', mathError);
-                // Wolfram ya fue consultado y falló — marcar para no repetir en flujo normal
                 sessionAttributes._wolframYaFallo = true;
             }
         }
