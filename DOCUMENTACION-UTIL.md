@@ -2,52 +2,66 @@
 
 ## Scripts Útiles (en `scripts/`)
 
-### 1. `deploy-completo.ps1` ⭐ PRINCIPAL
-**Uso**: Deploy completo (público + modo secreto)
-```powershell
-.\scripts\deploy-completo.ps1
+### ⚠️ ADVERTENCIA CRÍTICA
+
+**TODOS los scripts de PowerShell que usan `Compress-Archive` ROMPEN los symlinks de node_modules.**
+
+Esto causa errores fatales en Lambda como:
+- `Error: Cannot find module 'ask-sdk-core'`
+- `Error: Cannot find module '/var/tslib.js'`
+
+**Scripts afectados** (NO USAR):
+- ❌ `deploy-completo.ps1` - Usa Compress-Archive
+- ❌ `deploy-modo-secreto-seguro.ps1` - Usa Compress-Archive
+- ❌ Todos los scripts anteriores eliminados
+
+Ver `PROBLEMA-SCRIPTS-POWERSHELL.md` para detalles completos.
+
+---
+
+### Flujo de Deploy RECOMENDADO
+
+#### Para código público:
+```bash
+git add .
+git commit -m "feat: descripción"
+git push origin main
 ```
-- Fase 1: Git push → GitHub Actions despliega código público
-- Espera 45s para que GitHub Actions termine
-- Fase 2: AWS CLI descarga código actual y agrega modo secreto
-- Preserva node_modules correctamente (sin romper symlinks)
+✅ GitHub Actions se encarga automáticamente del deploy a Lambda.
 
-**IMPORTANTE**: Este es el ÚNICO script recomendado para deploy con modo secreto.
-Los scripts anteriores (`deploy-secreto.ps1`, `deploy-interactivo.ps1`) fueron eliminados
-porque `Compress-Archive` de PowerShell rompe los symlinks de node_modules.
+#### Para modo secreto:
+**Opción 1: Consola AWS (RECOMENDADO)**
+1. Ejecuta `git push` y espera 45 segundos
+2. Descarga el código de Lambda desde la consola AWS
+3. Agrega los 3 archivos del modo secreto manualmente
+4. Actualiza `index.js` manualmente
+5. Comprime con 7-Zip o WinRAR (NO PowerShell)
+6. Sube el ZIP por consola AWS
 
-### 2. `configure-lambda-env.ps1`
+**Opción 2: Script con advertencia**
+```powershell
+.\scripts\deploy-modo-secreto-seguro.ps1
+```
+⚠️ Este script ADVIERTE que puede romper symlinks y pide confirmación.
+
+---
+
+### Scripts Útiles (que SÍ funcionan)
+
+### 1. `configure-lambda-env.ps1`
 **Uso**: Sincronizar variables de entorno
 ```powershell
 .\scripts\configure-lambda-env.ps1 -FunctionName "AlexaProfesorUniversal"
 ```
 
-### 3. `setup-aws-complete.ps1`
+### 2. `setup-aws-complete.ps1`
 **Uso**: Setup inicial AWS (solo una vez)
 ```powershell
 .\scripts\setup-aws-complete.ps1
 ```
 
-### 4. `README-DEPLOY.md`
-Documentación completa de los scripts de deploy
-
----
-
-## Flujo de Deploy Recomendado
-
-### Para código público solamente:
-```bash
-git add .
-git commit -m "feat: descripción del cambio"
-git push origin main
-```
-GitHub Actions se encarga automáticamente del deploy a Lambda.
-
-### Para código público + modo secreto:
-```powershell
-.\scripts\deploy-completo.ps1
-```
-Este script hace todo: commit, push, espera, y agrega modo secreto.
+### 3. `README-DEPLOY.md`
+Documentación de scripts (DESACTUALIZADA - ver este archivo)
 
 ---
 
@@ -81,7 +95,7 @@ Este script hace todo: commit, push, espera, y agrega modo secreto.
 ### Documentación Temporal
 - Todos los archivos `*-ANALISIS.md`
 - Todos los archivos `LIMPIEZA-*.md`
-- Todos los archivos `PROBLEMA-*.md`
+- Todos los archivos `PROBLEMA-*.md` (excepto `PROBLEMA-SCRIPTS-POWERSHELL.md` - útil)
 - Todos los archivos `DEPLOY-*.md`
 - Todos los archivos `RESUMEN-*.md`
 
