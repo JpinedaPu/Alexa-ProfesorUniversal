@@ -7,7 +7,7 @@
 const { consultarWolfram } = require('../services/wolfram');
 const { consultarWikipedia } = require('../services/wikipedia');
 const { consultarClaude } = require('../services/claude');
-const { buscarImagenesNASA } = require('../utils/imagenesExtra');
+const { buscarImagenesExtra } = require('../utils/imagenesExtra');
 
 /**
  * Detecta si una pregunta es científica
@@ -62,7 +62,7 @@ async function ejecutarRutaCientifica(pregunta, keyword) {
   const [wolfram, wiki, imagenesNASA] = await Promise.all([
     consultarWolfram(keyword, null, { timeout: 3000 }),
     consultarWikipedia(keyword),
-    tipo === 'astronomia' ? buscarImagenesNASA(keyword, 10) : Promise.resolve([])
+    tipo === 'astronomia' ? buscarImagenesExtra(keyword, 10) : Promise.resolve([])
   ]);
   
   console.log(`[SCIENCE-ROUTE] Wolfram: ${wolfram.imagenes.length} imgs | Wiki: ${wiki.texto.length}ch | NASA: ${imagenesNASA.length} imgs`);

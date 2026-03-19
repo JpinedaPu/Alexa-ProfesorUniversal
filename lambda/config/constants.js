@@ -14,7 +14,7 @@ module.exports = {
         LRU_TTL_MS: 5 * 60 * 1000,           // TTL de 5 minutos para balance frescura/rendimiento
         DYNAMO_TTL_HOURS: 24,                // TTL de 24 horas en DynamoDB para persistencia
         S3_PREFIX: 'wolfram-conceptual/',     // Prefijo para organizar objetos en S3
-        S3_BUCKET: 'alexa-profesor-universal-cache' // Bucket S3 para caché de larga duración
+        S3_BUCKET: 'alexa-profesor-universal-cache-us-east-1' // Bucket S3 para caché de larga duración
     },
     
     // Límites de Wolfram Alpha para optimizar respuestas

@@ -63,7 +63,7 @@ async function traducir(texto, origen, destino, opciones = {}) {
             timeout: 2500,
             t0_global: opciones.t0_global,
             promptSimple: true
-        }), 2500, fallbackSpeech('timeout'));
+        }), 2500, limpio); // fallback al texto original, no al mensaje de error
         
         const t1 = Date.now();
         logStep('traduccionGPT', { origen, destino, ms: t1-t0, length: limpio.length });

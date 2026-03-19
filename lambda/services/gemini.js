@@ -34,14 +34,14 @@ async function consultarGemini(query) {
 
         const options = {
             hostname: 'generativelanguage.googleapis.com',
-            path: `/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`,
+            path: `/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
             timeout: 5000,
             agent: keepAliveAgent
         };
 
-        console.log(`[GEMINI] ⏱️ T+0ms | Consultando Gemini 3.1 Flash Lite para: "${query}"`);
+        console.log(`[GEMINI] ⏱️ T+0ms | Consultando Gemini 2.5 Flash-Lite para: "${query}"`);
 
         const req = https.request(options, (res) => {
             let data = '';
@@ -70,7 +70,7 @@ async function consultarGemini(query) {
                         return;
                     }
                     console.log(`[GEMINI] ✅ OK | T+${elapsed}ms | ${textoGenerado.length} chars`);
-                    resolve({ texto: textoGenerado, fuente: 'Gemini 3.1 Flash Lite' });
+                    resolve({ texto: textoGenerado, fuente: 'Gemini 2.5 Flash-Lite' });
                 } catch (e) {
                     console.log(`[GEMINI] ❌ ERR_PARSE | T+${elapsed}ms | ${e.message}`);
                     resolve({ texto: '', fuente: '' });
