@@ -462,8 +462,11 @@ const ErrorHandler = {
 /**
  * Configuración y exportación del handler principal de la Lambda.
  * Registra todos los handlers en orden de prioridad y configura cliente API.
+ * 
+ * NOTA: Usa .create() en lugar de .lambda() para compatibilidad con Node.js 24+
+ * El wrapper async/await elimina el warning de callbacks deprecados.
  */
-exports.handler = Alexa.SkillBuilders.custom()
+const skillBuilder = Alexa.SkillBuilders.custom()
     .addRequestHandlers(
         LaunchRequestHandler,           // Inicialización
         HelpIntentHandler,              // Ayuda
@@ -485,4 +488,9 @@ exports.handler = Alexa.SkillBuilders.custom()
     )
     .addErrorHandlers(ErrorHandler)     // Captura global de errores
     .withApiClient(new Alexa.DefaultApiClient()) // Cliente para APIs de Alexa
-    .lambda(); // Configuración específica para AWS Lambda
+    .create(); // Usa .create() en lugar de .lambda()
+
+// Wrapper async/await para compatibilidad con Node.js 24+
+exports.handler = async (event, context) => {
+    return await skillBuilder.invoke(event, context);
+};
