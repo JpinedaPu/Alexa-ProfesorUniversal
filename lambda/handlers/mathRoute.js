@@ -80,7 +80,7 @@ async function ejecutarRutaMatematica(pregunta, keyword, startTime = Date.now())
   console.log(`[MATH-ROUTE] Tipo detectado: ${tipo}`);
 
   const elapsed = Date.now() - startTime;
-  const wolframBudget = Math.max(2500, 4500 - elapsed);
+  const wolframBudget = Math.max(3000, 5500 - elapsed);
 
   // Llamada 1 (normal) y Claude en paralelo para ganar tiempo
   // Llamada 2 (SBS) se hace después con el tiempo restante
@@ -101,8 +101,8 @@ async function ejecutarRutaMatematica(pregunta, keyword, startTime = Date.now())
   
   const textoResultado = wolfram.texto || wolfram.textoResult || '';
 
-  // Claude con el tiempo restante (mínimo 2000ms)
-  const claudeBudget = Math.max(2000, 7400 - (Date.now() - startTime));
+  // Claude con el tiempo restante (mínimo 2500ms)
+  const claudeBudget = Math.max(2500, 7500 - (Date.now() - startTime));
   const claudeResponse = await consultarClaude(
     pregunta, textoResultado, '', '', keyword, [],
     { timeout: claudeBudget, wolframResultado: textoResultado }
