@@ -56,18 +56,19 @@ async function ejecutarRutaCientifica(pregunta, keyword, startTime = Date.now())
   const tipo = clasificarPreguntaCientifica(pregunta);
   console.log(`[SCIENCE-ROUTE] Tipo detectado: ${tipo}`);
   
-  // 1. Consultas paralelas
+  // 1. Consultas paralelas — Wolfram con timeout reducido para dejar margen a Claude
   const esEspacial = tipo === 'astronomia';
   const [wolfram, wiki, imagenesExtra] = await Promise.all([
-    consultarWolfram(keyword, null),
+    consultarWolfram(keyword, null, { timeoutMs: 2500 }),
     consultarWikipedia(keyword),
     buscarImagenesExtra(keyword, esEspacial ? 15 : 8)
   ]);
   
   console.log(`[SCIENCE-ROUTE] Wolfram: ${wolfram.imagenes.length} imgs | Wiki: ${wiki.texto.length}ch | Extra: ${imagenesExtra.length} imgs | tipo: ${tipo}`);
   
-  // 2. Síntesis con Claude — budget dinámico basado en tiempo restante
-  const claudeBudget = Math.max(2000, 7600 - (Date.now() - startTime) - 200);
+  // 2. Síntesis con Claude — mínimo 3500ms garantizados
+  const elapsed = Date.now() - startTime;
+  const claudeBudget = Math.max(3500, 7600 - elapsed - 200);
   const resultadoClaude = await consultarClaude(
     pregunta,
     wolfram.texto || '',

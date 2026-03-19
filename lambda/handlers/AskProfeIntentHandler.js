@@ -37,6 +37,7 @@ const { buscarImagenesExtra } = require('../utils/imagenesExtra');
 const { esPreguntaMatematica, ejecutarRutaMatematica, formatearTituloMatematico } = require('./mathRoute');
 const { esPreguntaCientifica, ejecutarRutaCientifica } = require('./scienceRoute');
 const { normalizarNotacionMatematica } = require('../utils/mathNotation');
+const { detectarAmbiguedad, resolverAmbiguedad } = require('../utils/ambiguityDetector');
 
 // Expresiones regulares para detección de tipos de pregunta específicos
 const periodoKeywords = /\b(periodo|mandato|presidencia|gobierno|administraci[oó]n)\b/i;
@@ -274,6 +275,14 @@ const AskProfeIntentHandler = {
         // Detectar si la entrada parece ser solo una ubicación (para contexto de duración del sol)
         const questionLooksLikeLocationOnly = /^[a-zA-Z\u00C0-\u017F\s-]{2,40}$/.test(rawQuestion.trim()) && rawQuestion.trim().split(/\s+/).length <= 4;
 
+        // Resolver ambigüedad pendiente de turno anterior (sin llamada GPT extra)
+        if (sessionAttributes.pendingAmbiguity) {
+            const resuelta = resolverAmbiguedad(question, sessionAttributes.pendingAmbiguity);
+            question = resuelta || question;
+            console.log(`[AMBIGUITY] Resuelta: "${question}"`);
+            sessionAttributes.pendingAmbiguity = null;
+        }
+
         // Manejar contexto de ubicación pendiente para preguntas sobre duración del sol
         if (sessionAttributes.pendingLocationRequest === 'duracion_sol') {
             if (questionLooksLikeLocationOnly && !duracionSolKeywords.test(rawQuestion))
@@ -325,6 +334,7 @@ const AskProfeIntentHandler = {
 
         // N-2 FIX: detectar ruta matemática ANTES de llamar GPT para keyword
         // esPreguntaMatematica() es síncrono (solo regex) — no necesita keyword
+        // IMPORTANTE: ruta matemática saltea detección de ambigüedad (no aplica a expresiones matemáticas)
         if (esPreguntaMatematica(question)) {
             console.log('[ROUTE] Detectada pregunta MATEMÁTICA');
             // Para ruta matemática, keyword se extrae del fast path de gpt.js (sin llamada GPT)
@@ -406,10 +416,35 @@ const AskProfeIntentHandler = {
         }
         
         // Extraer keyword para rutas científica y flujo normal (no matemática)
-        let keyword = await withTimeout(
-            obtenerKeyword(question, sessionAttributes.history, sessionAttributes.lastSubject || sessionAttributes.lastKeyword, datoSolicitado),
-            TIMEOUTS.KEYWORD_EXTRACTION_TIMEOUT, question
-        );
+        // Detectar ambigüedad EN PARALELO con obtenerKeyword — costo extra: ~0ms
+        const [keyword_raw, ambiguedad] = await Promise.all([
+            withTimeout(
+                obtenerKeyword(question, sessionAttributes.history, sessionAttributes.lastSubject || sessionAttributes.lastKeyword, datoSolicitado),
+                TIMEOUTS.KEYWORD_EXTRACTION_TIMEOUT, question
+            ),
+            // Solo detectar si NO es un turno de resolución (pendingAmbiguity ya fue limpiado arriba)
+            !sessionAttributes.pendingAmbiguity
+                ? detectarAmbiguedad(question)
+                : Promise.resolve({ ambigua: false })
+        ]);
+
+        // Si GPT detectó ambigüedad, pausar flujo y pedir aclaración
+        if (ambiguedad.ambigua) {
+            console.log(`[AMBIGUITY] Detectada: "${question}" | aclaracion: "${ambiguedad.aclaracion}"`);
+            sessionAttributes.pendingAmbiguity = {
+                interpretaciones: ambiguedad.interpretaciones || [],
+                preguntaCorregidaA: ambiguedad.preguntaCorregidaA || question,
+                preguntaCorregidaB: ambiguedad.preguntaCorregidaB || question,
+                preguntaOriginal: question
+            };
+            attributesManager.setSessionAttributes(sessionAttributes);
+            return handlerInput.responseBuilder
+                .speak(ambiguedad.aclaracion)
+                .reprompt(ambiguedad.aclaracion)
+                .getResponse();
+        }
+
+        let keyword = keyword_raw;
         if (!keyword || keyword.length < INPUT.MIN_QUESTION_LENGTH) keyword = question;
         keyword = normalizarNotacionMatematica(keyword);
         console.log(`[KEYWORD] "${keyword}" | T+${Date.now() - startTime}ms`);
