@@ -16,9 +16,7 @@ const { buscarImagenesExtra } = require('../utils/imagenesExtra');
  */
 function esPreguntaCientifica(pregunta) {
   const p = pregunta.toLowerCase();
-  
-  const keywords = /\b(agujero\s+negro|estrella|planeta|galaxia|nebulosa|cometa|asteroide|satelite|telescopio|nasa|hubble|james\s+webb|sistema\s+solar|via\s+lactea|big\s+bang|universo|cosmos|astronomia|astrofisica|quasar|pulsar|supernova|materia\s+oscura|energia\s+oscura)\b/i;
-  
+  const keywords = /\b(agujero\s+negro|estrella|planeta|galaxia|nebulosa|cometa|asteroide|satelite|telescopio|nasa|hubble|james\s+webb|sistema\s+solar|via\s+lactea|big\s+bang|universo|cosmos|astronomia|astrofisica|quasar|pulsar|supernova|materia\s+oscura|energia\s+oscura|velocidad|masa|energia|fuerza|gravedad|onda|particula|electromagnetismo|termodinamica|mecanica\s+cuantica|relatividad|atomo|molecula|elemento|reaccion\s+quimica|compuesto|tabla\s+periodica|celula|adn|gen|organismo|evolucion|especie|fotosintesis)\b/i;
   return keywords.test(p);
 }
 
@@ -59,13 +57,14 @@ async function ejecutarRutaCientifica(pregunta, keyword) {
   console.log(`[SCIENCE-ROUTE] Tipo detectado: ${tipo}`);
   
   // 1. Consultas paralelas
-  const [wolfram, wiki, imagenesNASA] = await Promise.all([
-    consultarWolfram(keyword, null, { timeout: 3000 }),
+  const esEspacial = tipo === 'astronomia';
+  const [wolfram, wiki, imagenesExtra] = await Promise.all([
+    consultarWolfram(keyword, null),
     consultarWikipedia(keyword),
-    tipo === 'astronomia' ? buscarImagenesExtra(keyword, 10) : Promise.resolve([])
+    buscarImagenesExtra(keyword, esEspacial ? 15 : 8)
   ]);
   
-  console.log(`[SCIENCE-ROUTE] Wolfram: ${wolfram.imagenes.length} imgs | Wiki: ${wiki.texto.length}ch | NASA: ${imagenesNASA.length} imgs`);
+  console.log(`[SCIENCE-ROUTE] Wolfram: ${wolfram.imagenes.length} imgs | Wiki: ${wiki.texto.length}ch | Extra: ${imagenesExtra.length} imgs | tipo: ${tipo}`);
   
   // 2. Síntesis con Claude
   const resultadoClaude = await consultarClaude(
@@ -80,26 +79,26 @@ async function ejecutarRutaCientifica(pregunta, keyword) {
   
   const speech = resultadoClaude.speech || 'Aquí está la información científica que buscabas.';
   
-  // 3. Combinar imágenes
+  // 3. Combinar imágenes: Wolfram primero, luego NASA/Wikimedia
   const todasImagenes = [
     ...wolfram.imagenes,
-    ...imagenesNASA.map(img => ({
-      titulo: img.titulo || 'NASA',
+    ...imagenesExtra.map(img => ({
+      titulo: img.titulo || img.fuente || 'Ciencia',
       url: img.url,
-      width: 800,
-      height: 600
+      width: img.width || 800,
+      height: img.height || 600
     }))
   ].slice(0, 20);
-  
+
   return {
     speech: speech || 'Aquí está la información científica que buscabas.',
     displayTop: `Ciencia: ${keyword}`,
-    displayBottom: wiki.texto ? wiki.texto.substring(0, 300) : wolfram.texto.substring(0, 300),
+    displayBottom: wiki.texto ? wiki.texto.substring(0, 300) : (wolfram.texto || '').substring(0, 300),
     imagenes: todasImagenes,
     canStepByStep: false,
-    tipo: tipo,
-    keyword: keyword,
-    fuenteNASA: imagenesNASA.length > 0
+    tipo,
+    keyword,
+    fuenteNASA: imagenesExtra.some(i => i.fuente === 'NASA')
   };
 }
 

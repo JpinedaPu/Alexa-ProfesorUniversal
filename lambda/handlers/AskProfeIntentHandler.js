@@ -398,7 +398,8 @@ const AskProfeIntentHandler = {
                 }
             } catch (mathError) {
                 console.error('[MATH-ROUTE] Error:', mathError);
-                // Continuar con flujo normal si falla
+                // Wolfram ya fue consultado y falló — marcar para no repetir en flujo normal
+                sessionAttributes._wolframYaFallo = true;
             }
         }
         
@@ -547,7 +548,10 @@ const AskProfeIntentHandler = {
 
                 const DEADLINE = startTime + PERFORMANCE.GLOBAL_DEADLINE_MS;
 
-                const wolframPromise = withTimeout(consultarWolfram(wolframKeyword, userLocation), TIMEOUTS.WOLFRAM_TIMEOUT, { imagenes: [], texto: '', canStepByStep: false, stepByStepInputs: [] });
+                const wolframPromise = sessionAttributes._wolframYaFallo
+                    ? Promise.resolve({ imagenes: [], texto: '', canStepByStep: false, stepByStepInputs: [] })
+                    : withTimeout(consultarWolfram(wolframKeyword, userLocation), TIMEOUTS.WOLFRAM_TIMEOUT, { imagenes: [], texto: '', canStepByStep: false, stepByStepInputs: [] });
+                delete sessionAttributes._wolframYaFallo;
                 const wikiPromise    = withTimeout(consultarWikipedia(keyword), TIMEOUTS.WIKI_TIMEOUT, { texto: '', imagen: '', titulo: '' });
                 const geminiPromise  = withTimeout(consultarGemini(question), TIMEOUTS.GEMINI_TIMEOUT, { texto: '', fuente: '' });
                 const imgExtraPromise2 = withTimeout(imagenesExtraPromise, TIMEOUTS.IMAGES_EXTRA_TIMEOUT, []);
