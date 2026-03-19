@@ -15,7 +15,7 @@
  * @returns {string} Mensaje de fallback apropiado para el contexto
  */
 module.exports.fallbackSpeech = (context) => {
-  if (context === 'timeout') return 'Mi respuesta tardó demasiado. ¿Puedes repetir?';
-  if (context === 'nodata') return 'No pude obtener datos en este momento, ¿quieres intentar otra pregunta?';
-  return 'Ocurrió un error inesperado. ¿Quieres intentar otra pregunta?';
+  if (context === 'timeout') return 'La respuesta está tardando más de lo esperado. ¿Puedes intentar de nuevo?';
+  if (context === 'nodata') return 'No encontré información sobre eso en este momento. ¿Quieres preguntarme algo más?';
+  return 'Ups, algo no salió bien. ¿Intentamos con otra pregunta?';
 };

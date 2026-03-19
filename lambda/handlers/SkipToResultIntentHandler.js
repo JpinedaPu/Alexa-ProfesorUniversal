@@ -92,7 +92,7 @@ const SkipToResultIntentHandler = {
         
         if (!resultPod) {
             return handlerInput.responseBuilder
-                .speak('No pude encontrar el resultado. Intenta de nuevo.')
+                .speak('No encontré el resultado final. ¿Quieres que intente de nuevo?')
                 .reprompt('¿Qué quieres calcular?')
                 .getResponse();
         }

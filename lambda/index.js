@@ -437,7 +437,7 @@ const FallbackIntentHandler = {
             && Alexa.getIntentName(h.requestEnvelope) === 'AMAZON.FallbackIntent';
     },
     handle(h) {
-        const msg = 'Lo siento, no estoy seguro de cómo ayudarte con eso. ¿Podrías repetirlo o preguntarme sobre otro tema?';
+        const msg = 'Hmm, no estoy seguro de cómo ayudarte con eso. ¿Podrías reformular tu pregunta o preguntarme sobre otro tema?';
         return h.responseBuilder.speak(msg).reprompt(msg).getResponse();
     }
 };

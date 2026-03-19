@@ -172,7 +172,7 @@ async function consultarClaude(pregunta, datoWolfram, datoWikipedia, datoGemini,
 
         if (!responseBody.content || !responseBody.content[0] || !responseBody.content[0].text) {
             console.log('[CLAUDE-BEDROCK] ⚠️ Respuesta vacía');
-            return fallback('Lo siento, no recibí respuesta de la IA. ¿Repites?', 'Sin respuesta de IA');
+            return fallback('No recibí una respuesta clara. ¿Puedes reformular tu pregunta?', 'Sin respuesta de IA');
         }
 
         if (responseBody.stop_reason === 'max_tokens') {
@@ -200,7 +200,7 @@ async function consultarClaude(pregunta, datoWolfram, datoWikipedia, datoGemini,
 
         const enriched = JSON.parse(jsonStr);
         if (!enriched || !enriched.speech) {
-            return fallback('No pude generar una respuesta clara. ¿Puedes repetir?', 'Sin respuesta');
+            return fallback('Hmm, no pude procesar esa respuesta. ¿Intentamos de nuevo?', 'Sin respuesta');
         }
 
         if (enriched.speech) enriched.speech = sanitizeSpeech(enriched.speech);
@@ -214,7 +214,7 @@ async function consultarClaude(pregunta, datoWolfram, datoWikipedia, datoGemini,
 
         if (err.name === 'AbortError' || err.name === 'TimeoutError') {
             console.log(`[CLAUDE-BEDROCK] ❌ TIMEOUT | T+${elapsed}ms | límite: ${claudeTimeout}ms`);
-            return fallback('Lo siento, la respuesta tardó demasiado. ¿Puedes repetir?', 'Timeout');
+            return fallback('La respuesta está tardando más de lo normal. ¿Puedes intentar de nuevo?', 'Timeout');
         }
         if (err.name === 'ThrottlingException') {
             console.log(`[CLAUDE-BEDROCK] ❌ THROTTLING | T+${elapsed}ms`);
@@ -226,11 +226,11 @@ async function consultarClaude(pregunta, datoWolfram, datoWikipedia, datoGemini,
             if (CLAUDE_API_KEY) {
                 return consultarClaudeDirecto(messages, opciones.prompt || systemContent, keywordOriginal, claudeTimeout - elapsed);
             }
-            return fallback('Lo siento, mi cerebro digital se distrajo. ¿Repites?', 'Error de acceso');
+            return fallback('Estoy un poco ocupado ahora. ¿Puedes intentar en un momento?', 'Error de acceso');
         }
 
         console.log(`[CLAUDE-BEDROCK] ❌ ERR | T+${elapsed}ms | ${err.message}`);
-        return fallback('No pude conectar con mi base de datos.', 'Error de red');
+        return fallback('Tuve un problema conectándome. ¿Intentamos de nuevo?', 'Error de red');
     }
 }
 
@@ -270,7 +270,7 @@ function consultarClaudeDirecto(messages, system, keywordOriginal, timeoutMs) {
                 const elapsed = Date.now() - startTime;
                 if (res.statusCode !== 200) {
                     console.log(`[CLAUDE-DIRECT] ❌ HTTP ${res.statusCode} | T+${elapsed}ms`);
-                    resolve(fallback('Lo siento, mi cerebro digital se distrajo. ¿Repites?', 'Error de conexión'));
+                    resolve(fallback('Hmm, algo no funcionó bien. ¿Intentamos otra vez?', 'Error de conexión'));
                     return;
                 }
                 try {
@@ -279,15 +279,15 @@ function consultarClaudeDirecto(messages, system, keywordOriginal, timeoutMs) {
                     if (!text) { resolve(fallback('No recibí respuesta. ¿Repites?', 'Sin respuesta')); return; }
                     const s = text.indexOf('{'), e = text.lastIndexOf('}');
                     const enriched = (s !== -1 && e > s) ? JSON.parse(text.substring(s, e + 1)) : null;
-                    if (!enriched || !enriched.speech) { resolve(fallback('No pude generar respuesta. ¿Repites?', 'Error')); return; }
+                    if (!enriched || !enriched.speech) { resolve(fallback('No pude generar una respuesta. ¿Intentamos de nuevo?', 'Error')); return; }
                     if (enriched.speech) enriched.speech = sanitizeSpeech(enriched.speech);
                     console.log(`[CLAUDE-DIRECT] ✅ OK | T+${elapsed}ms`);
                     resolve(enriched);
                 } catch (e2) { resolve(fallback('Error de formato. ¿Repites?', 'Error')); }
             });
         });
-        req.on('timeout', () => { req.destroy(); resolve(fallback('Respuesta tardó demasiado. ¿Repites?', 'Timeout')); });
-        req.on('error', () => resolve(fallback('No pude conectar. ¿Repites?', 'Error de red')));
+        req.on('timeout', () => { req.destroy(); resolve(fallback('La respuesta está tardando mucho. ¿Intentamos de nuevo?', 'Timeout')); });
+        req.on('error', () => resolve(fallback('Tuve un problema de conexión. ¿Intentamos otra vez?', 'Error de red')));
         req.write(payload);
         req.end();
     });

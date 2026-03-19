@@ -135,10 +135,11 @@ function shouldCacheResponse(result, sources) {
     if (!result || !validateSpeech(result.speech)) return false;
     const normalized = (result.speech || '').toLowerCase();
     // Filtrar mensajes de error conocidos
-    if (normalized.includes('la respuesta tardo') || normalized.includes('error de conexion') ||
-        normalized.includes('sin respuesta de ia') || normalized.includes('tuve un problema') ||
-        normalized.includes('no pude conectar') || normalized.includes('puedes repetir') ||
-        normalized.includes('cerebro digital se distrajo') || normalized.includes('limite de uso alcanzado'))
+    if (normalized.includes('respuesta esta tardando') || normalized.includes('problema conectandome') ||
+        normalized.includes('no recibi una respuesta') || normalized.includes('tuve un problema') ||
+        normalized.includes('no encontre informacion') || normalized.includes('puedes intentar') ||
+        normalized.includes('algo no salio bien') || normalized.includes('estoy un poco ocupado') ||
+        normalized.includes('ups'))
         return false;
     // Verificar que hay contenido sustancial de las fuentes
     const totalChars = ((sources.wiki && sources.wiki.texto) || '').length
@@ -490,11 +491,11 @@ const AskProfeIntentHandler = {
         // Enviar Progressive Response para mejorar experiencia de usuario durante procesamiento
         if (canSendProgressive(handlerInput)) {
             const msgs = [
-                'Un momento mientras busco la mejor explicacion para ti...',
-                'Dejame pensar... revisando informacion en Wolfram Alpha y Wikipedia.',
-                'Consultando a mis inteligencias artificiales, dame un segundo...',
-                'Sabias que puedes decir activa modo wolfram para resolver ecuaciones paso a paso? Ya casi tengo tu respuesta.',
-                'Procesando tu pregunta en mis bases de datos...'
+                'Déjame buscar eso para ti, un momento...',
+                'Interesante pregunta, déjame consultar mis fuentes...',
+                'Revisando en Wolfram Alpha y Wikipedia, dame un segundo...',
+                'Procesando tu pregunta... por cierto, ¿sabías que puedes decir "modo wolfram" para resolver ecuaciones paso a paso?',
+                'Consultando con mis inteligencias artificiales, ya casi lo tengo...'
             ];
             try {
                 const directiveServiceClient = handlerInput.serviceClientFactory.getDirectiveServiceClient();

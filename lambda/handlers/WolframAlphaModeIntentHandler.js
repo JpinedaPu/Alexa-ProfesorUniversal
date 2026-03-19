@@ -270,10 +270,10 @@ INSTRUCCIONES — responde SOLO con JSON válido:
                 const progressivePromise = (async () => {
                     try {
                         const buyingTimeMessages = [
-                            "Procesando tu ecuación matemática... un momento.",
-                            "Consultando a Wolfram Alpha para darte la solución paso a paso...",
-                            "Pidiendo los pasos a Wolfram Alpha, esto puede tomar unos segundos...",
-                            "Analizando la expresión matemática... ya casi lo tengo."
+                            "Analizando tu ecuación, un momento...",
+                            "Consultando a Wolfram Alpha para la solución paso a paso...",
+                            "Preparando los pasos detallados, esto puede tomar unos segundos...",
+                            "Procesando la expresión matemática, ya casi está..."
                         ];
                         const randomMsg = buyingTimeMessages[Math.floor(Math.random() * buyingTimeMessages.length)];
                         if (handlerInput.serviceClientFactory) {
@@ -333,7 +333,7 @@ INSTRUCCIONES — responde SOLO con JSON válido:
 
             if (!wolfram.texto && (!wolfram.imagenes || wolfram.imagenes.length === 0)) {
                 return handlerInput.responseBuilder
-                    .speak(`Lo siento, Wolfram no encontró una solución paso a paso para "${keywordMath || keyword}". Puedes intentar con más detalle.`)
+                    .speak(`Hmm, Wolfram no encontró una solución paso a paso para eso. ¿Puedes intentar con más detalle o reformular la ecuación?`)
                     .reprompt("¿Algo más?")
                     .getResponse();
             }
