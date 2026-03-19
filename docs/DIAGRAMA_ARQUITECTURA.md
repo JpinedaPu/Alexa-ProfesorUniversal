@@ -188,6 +188,28 @@ Repo público (portfolio, opcional):
      │
      │  git push origin main
      ▼
-GitHub Actions (.github/workflows/deploy-lambda.yml)
-     └─ zip lambda/ (excluye archivos secretos) → Lambda sin modo secreto
+GitHub Actions (.github/workflows/ci.yml)
+     └─ node --check index.js + npm audit (solo validación, NO deploya a Lambda)
+```
+
+### Pre-push hook (protección modo secreto)
+
+Archivo: `.git/hooks/pre-push` — **no se sube a GitHub**, recrear manualmente si se clona el repo.
+
+```sh
+#!/bin/sh
+# Bloquea push al repo público si hay archivos del modo secreto trackeados
+REMOTE_URL="$2"
+if echo "$REMOTE_URL" | grep -q "Alexa-ProfesorUniversal-private"; then exit 0; fi
+SECRET_FILES="lambda/handlers/SecretRouteIntentHandler.js lambda/handlers/artesLiberalesRoutes.js lambda/services/elevenlabs.js"
+FOUND=""
+for f in $SECRET_FILES; do
+    if git ls-files --error-unmatch "$f" 2>/dev/null; then FOUND="$FOUND $f"; fi
+done
+if [ -n "$FOUND" ]; then
+    echo "❌ PUSH BLOQUEADO — archivos secretos trackeados:$FOUND"
+    echo "Ejecuta: git rm --cached [archivo] && git commit"
+    exit 1
+fi
+exit 0
 ```

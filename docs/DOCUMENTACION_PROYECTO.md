@@ -154,7 +154,15 @@ Políticas: `AWSLambdaBasicExecutionRole`, DynamoDB, S3, Bedrock Claude
 
 ## Despliegue
 
-### Automático (recomendado)
+### Dos repositorios
+
+| | Repo público (`origin`) | Repo privado (`private`) |
+|---|---|---|
+| URL | `Alexa-ProfesorUniversal` | `Alexa-ProfesorUniversal-private` |
+| Archivos secretos | ❌ No | ✅ Sí |
+| Deploy a Lambda | ❌ Desactivado | ✅ Activo |
+
+### Flujo normal
 ```bash
 # Deploy principal — repo privado → Lambda con modo secreto incluido
 git add .
@@ -165,6 +173,20 @@ git push private main
 # Deploy repo público (portfolio, opcional)
 git push origin main
 ```
+
+### Protección pre-push hook
+
+El archivo `.git/hooks/pre-push` bloquea automáticamente `git push origin main` si los archivos del modo secreto están trackeados en git. Esto previene filtraciones accidentales.
+
+Si el hook bloquea el push:
+```bash
+git rm --cached lambda/handlers/SecretRouteIntentHandler.js
+git rm --cached lambda/handlers/artesLiberalesRoutes.js
+git rm --cached lambda/services/elevenlabs.js
+git commit -m "chore: eliminar archivos secretos del tracking"
+```
+
+> El hook vive en `.git/hooks/` y **no se sube a GitHub**. Si clonas el repo en una máquina nueva, cópialo manualmente desde el hook documentado en `REFERENCIA_RAPIDA.md`.
 
 ### Variables de entorno
 ```powershell

@@ -8,7 +8,7 @@
 # Deploy principal (con modo secreto incluido)
 git add . && git commit -m "feat: descripción" && git push private main
 
-# Deploy repo público (portfolio, opcional)
+# Deploy repo público (portfolio, opcional) — el hook bloquea si hay archivos secretos trackeados
 git push origin main
 
 # Sincronizar .env local → Lambda
@@ -20,6 +20,38 @@ aws logs tail /aws/lambda/AlexaProfesorUniversal --follow --region us-east-1
 # Buscar errores
 aws logs filter-log-events --log-group-name /aws/lambda/AlexaProfesorUniversal --filter-pattern "ERROR" --region us-east-1
 ```
+
+---
+
+## Arquitectura de Dos Repositorios
+
+| | Repo público (`origin`) | Repo privado (`private`) |
+|---|---|---|
+| URL | `Alexa-ProfesorUniversal` | `Alexa-ProfesorUniversal-private` |
+| Archivos secretos | ❌ No | ✅ Sí |
+| Deploy a Lambda | ❌ Desactivado | ✅ Activo |
+| Workflow | `ci.yml` (solo validación) | `deploy-lambda-private.yml` |
+
+### Protección contra filtración del modo secreto
+
+Hay un **pre-push hook** en `.git/hooks/pre-push` que bloquea automáticamente cualquier `git push origin main` si detecta que los archivos del modo secreto están trackeados en git:
+
+```
+❌ PUSH BLOQUEADO — Archivos del modo secreto detectados en el repo público:
+   lambda/handlers/SecretRouteIntentHandler.js
+   lambda/handlers/artesLiberalesRoutes.js
+   lambda/services/elevenlabs.js
+```
+
+Si ves este error, ejecuta:
+```bash
+git rm --cached lambda/handlers/SecretRouteIntentHandler.js
+git rm --cached lambda/handlers/artesLiberalesRoutes.js
+git rm --cached lambda/services/elevenlabs.js
+git commit -m "chore: eliminar archivos secretos del tracking"
+```
+
+> **Nota:** El hook vive en `.git/hooks/` que no se sube a GitHub. Si clonas el repo en una máquina nueva, debes recrearlo manualmente desde `docs/FLUJO-STEP-BY-STEP.md` o copiando el archivo.
 
 ---
 
