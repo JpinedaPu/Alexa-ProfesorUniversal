@@ -18,6 +18,7 @@ const { WolframAlphaModeIntentHandler }  = require('./handlers/WolframAlphaModeI
 const { ContinueWolframIntentHandler }   = require('./handlers/ContinueWolframIntentHandler');
 const { SkipToResultIntentHandler }      = require('./handlers/SkipToResultIntentHandler');
 const { RepeatLastQuestionIntentHandler } = require('./handlers/RepeatLastQuestionIntentHandler');
+const { SecretModeIntentHandler, ArteLiberalIntentHandler } = require('./handlers/SecretRouteIntentHandler');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -475,6 +476,8 @@ const skillBuilder = Alexa.SkillBuilders.custom()
         SkipToResultIntentHandler,      // Saltar al resultado final
         RepeatLastQuestionIntentHandler,// Repetir última respuesta
         YesIntentHandler,               // Confirmar repetir pregunta
+        SecretModeIntentHandler,         // Modo secreto - 7 Artes Liberales
+        ArteLiberalIntentHandler,        // Explorar arte liberal específica
         DarkModeIntentHandler,          // Control de tema visual
         WhisperModeIntentHandler,       // Control de volumen
         ZoomIntentHandler,              // Control de accesibilidad
