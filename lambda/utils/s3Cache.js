@@ -55,4 +55,4 @@ async function guardarEnCache(cacheKey, pregunta, data) {
     }
 }
 
-module.exports = { analizarCacheabilidad, buscarEnCache, guardarEnCache, generarCacheKey };
+module.exports = { buscarEnCache, guardarEnCache };

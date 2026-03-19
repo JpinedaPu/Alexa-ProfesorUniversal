@@ -143,4 +143,4 @@ function cleanOldestCache(maxEntries = 100) {
     console.log(`[CACHE] Tamaño actual: ${CACHE.size()}/${CACHE.maxSize} entradas`);
 }
 
-module.exports = { getFromCache, setCache, cleanOldestCache, CACHE_TTL };
+module.exports = { getFromCache, setCache };

@@ -41,7 +41,7 @@ async function convertirANotacionMatematica(preguntaEs) {
     
     return new Promise((resolve) => {
         const payload = JSON.stringify({
-            model: "gpt-4o-mini",
+            model: "gpt-4.1-mini",
             max_tokens: 60,
             temperature: 0, // Determinista para conversiones matemáticas consistentes
             messages: [
@@ -272,29 +272,26 @@ INSTRUCCIONES — responde SOLO con JSON válido:
                 );
                 console.log(`[WOLF-MODE] Query final para Wolfram: "${keywordMath}"`);
 
-                // --- PROGRESSIVE RESPONSE (Comprar tiempo) ---
-        try {
-            const buyingTimeMessages = [
-                "Procesando tu ecuación matemática... un momento.",
-                "Consultando a Wolfram Alpha para darte la solución paso a paso...",
-                "Pidiendo los pasos a Wolfram Alpha, esto puede tomar unos segundos...",
-                "Analizando la expresión matemática... ya casi lo tengo."
-            ];
-            const randomMsg = buyingTimeMessages[Math.floor(Math.random() * buyingTimeMessages.length)];
-            
-            const directiveServiceClient = handlerInput.serviceClientFactory.getDirectiveServiceClient();
-            const directive = {
-                header: { requestId: handlerInput.requestEnvelope.request.requestId },
-                directive: { type: "VoicePlayer.Speak", speech: randomMsg }
-            };
-            await directiveServiceClient.enqueue(
-                directive,
-                handlerInput.requestEnvelope.context.System.apiEndpoint,
-                handlerInput.requestEnvelope.context.System.apiAccessToken
-            );
-        } catch (err) {
-            console.log("Error enviando progressive response en Wolfram Intent:", err);
-        }
+                // --- PROGRESSIVE RESPONSE ---
+                try {
+                    const buyingTimeMessages = [
+                        "Procesando tu ecuación matemática... un momento.",
+                        "Consultando a Wolfram Alpha para darte la solución paso a paso...",
+                        "Pidiendo los pasos a Wolfram Alpha, esto puede tomar unos segundos...",
+                        "Analizando la expresión matemática... ya casi lo tengo."
+                    ];
+                    const randomMsg = buyingTimeMessages[Math.floor(Math.random() * buyingTimeMessages.length)];
+                    if (handlerInput.serviceClientFactory) {
+                        const directiveServiceClient = handlerInput.serviceClientFactory.getDirectiveServiceClient();
+                        await directiveServiceClient.enqueue(
+                            { header: { requestId: handlerInput.requestEnvelope.request.requestId }, directive: { type: "VoicePlayer.Speak", speech: randomMsg } },
+                            handlerInput.requestEnvelope.context.System.apiEndpoint,
+                            handlerInput.requestEnvelope.context.System.apiAccessToken
+                        );
+                    }
+                } catch (err) {
+                    console.log('[WOLF-MODE] Progressive response no disponible:', err.message);
+                }
 
                 // 3. Traducir la pregunta a notación matemática y consultar Wolfram con podstate correcto
                 wolfram = await withTimeout(

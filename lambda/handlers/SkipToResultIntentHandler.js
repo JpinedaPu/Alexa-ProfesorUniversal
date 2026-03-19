@@ -139,7 +139,7 @@ Responde SOLO con el JSON, sin texto adicional.`;
                 document: generarAPL(sessionAttributes.darkMode),
                 datasources: {
                     templateData: {
-                        titulo: `🎯 Resultado Final: ${originalQuestion}`,
+                        titulo: `Resultado Final: ${originalQuestion}`,
                         textoSuperior: sintesisResult.displayTop || 'Resultado',
                         textoInferior: sintesisResult.displayBottom || '',
                         imagenes: [resultPod],

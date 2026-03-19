@@ -10,8 +10,9 @@ const ContinueWolframIntentHandler = {
             const intentName = req.intent.name;
             const validIntents = ['AMAZON.NextIntent', 'AMAZON.ResumeIntent', 'AMAZON.YesIntent', 'ContinueWolframIntent'];
             if (validIntents.includes(intentName)) {
-                // Verificar si estamos a la mitad del proceso wolfram
                 const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+                // No interceptar YesIntent si hay un pendingRepeat activo (lo maneja YesIntentHandler)
+                if (intentName === 'AMAZON.YesIntent' && sessionAttributes.pendingRepeat) return false;
                 if (sessionAttributes.wolframData && sessionAttributes.currentWolframStep !== undefined) {
                     const allImagesLength = sessionAttributes.wolframData.imagenes ? sessionAttributes.wolframData.imagenes.length : 0;
                     if (sessionAttributes.currentWolframStep < allImagesLength) {
