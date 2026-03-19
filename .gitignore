@@ -19,6 +19,8 @@ lambda/handlers/artesLiberalesRoutes.js
 lambda/services/elevenlabs.js
 scripts/activar-modo-secreto.js
 scripts/deploy-secreto.ps1
+scripts/update-modo-secreto.ps1
+scripts/deploy-completo.ps1
 skill-package/interactionModels/custom/es-ES-artes-liberales.json
 docs/MODO_SECRETO.md
 docs/7-ARTES-LIBERALES.md
@@ -26,10 +28,21 @@ MODO-SECRETO-README.md
 MODO-SECRETO-IMPLEMENTACION.md
 PROTECCION-MODO-SECRETO.md
 DEPLOY-MODO-SECRETO-GUIA.md
+MODO-SECRETO-DESPLEGADO-EXITOSAMENTE.md
+SCRIPTS-ESTADO-ACTUAL.md
 
 # READMEs locales con documentación completa (incluye modo secreto)
 README-LOCAL.md
 lambda/README-LOCAL.md
+
+# Documentación temporal y análisis
+*-ANALISIS.md
+LIMPIEZA-*.md
+PROBLEMA-*.md
+DEPLOY-*.md
+RESUMEN-*.md
+ESTADO-*.md
+ARCHIVOS-*.md
 
 # Deploy artifacts
 lambda_deploy.zip

@@ -141,24 +141,39 @@ async function obtenerKeyword(pregunta, historial = [], contextoFactual = null, 
         if (mathMatch) {
             const op = mathMatch[1];
             const expr = mathMatch[2].trim()
+                // Variables fonéticas
+                .replace(/\bequis\b/g, 'x')
+                .replace(/\bigriega\b/g, 'y')
+                .replace(/\bzeta\b/g, 'z')
+                // Potencias
                 .replace(/\bx\s+al\s+cubo\b/g, 'x^3')
                 .replace(/\bx\s+al\s+cuadrado\b/g, 'x^2')
                 .replace(/\b(\w+)\s+al\s+cubo\b/g, '$1^3')
                 .replace(/\b(\w+)\s+al\s+cuadrado\b/g, '$1^2')
                 .replace(/\b(\w+)\s+a\s+la\s+(\d+)\b/g, '$1^$2')
+                // Operadores — "sobre" ANTES que "entre" para no colisionar
+                .replace(/\bsobre\b/g, '/')
                 .replace(/\bmas\b/g, '+').replace(/\bmenos\b/g, '-')
                 .replace(/\bpor\b/g, '*').replace(/\bentre\b/g, '/')
-                .replace(/\braiz\s+de\b/g, 'sqrt')
+                // Funciones — logaritmo natural ANTES que logaritmo genérico
+                .replace(/\blogaritmo\s+natural\s+de\b/g, 'ln(')
+                .replace(/\blog\s+natural\s+de\b/g, 'ln(')
+                .replace(/\bln\s+de\b/g, 'ln(')
+                .replace(/\braiz\s+de\b/g, 'sqrt(')
                 .replace(/\bseno\b/g, 'sin').replace(/\bcoseno\b/g, 'cos').replace(/\btangente\b/g, 'tan')
                 .replace(/\blogaritmo\b/g, 'log')
+                // Límites
                 .replace(/\bcuando\s+x\s+tiende\s+a\s+infinito\b/g, 'as x approaches infinity')
                 .replace(/\bcuando\s+x\s+tiende\s+a\s+(\w+)\b/g, 'as x approaches $1')
                 .replace(/\btiende\s+a\s+infinito\b/g, 'approaches infinity')
                 .replace(/\btiende\s+a\s+(\w+)\b/g, 'approaches $1')
                 .replace(/\s+/g, ' ').trim();
-            const keyword = op === 'derivada' ? `derivative of ${expr}`
-                : op === 'integral' ? `integral of ${expr}`
-                : `limit of ${expr}`;
+            // Cerrar paréntesis abiertos por funciones (ln, sqrt, sin, cos, tan, log)
+            const abiertos = (expr.match(/\(/g) || []).length - (expr.match(/\)/g) || []).length;
+            const exprFinal = abiertos > 0 ? expr + ')'.repeat(abiertos) : expr;
+            const keyword = op === 'derivada' ? `derivative of ${exprFinal}`
+                : op === 'integral' ? `integral of ${exprFinal}`
+                : `limit of ${exprFinal}`;
             console.log(`[GPT-KW] FAST PATH MATH | T+${Date.now()-startTime}ms | "${keyword}"`);
             resolve(keyword);
             return;

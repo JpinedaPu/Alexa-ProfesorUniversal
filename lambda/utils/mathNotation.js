@@ -38,8 +38,9 @@ function normalizarNotacionMatematica(texto) {
     .replace(/\b(\w+)\s+elevado\s+a\s+(\d+)\b/gi, '$1^$2')
     .replace(/\b(\w+)\s+elevado\s+a\s+la\s+(\d+)\b/gi, '$1^$2');
   
-  // Operadores básicos (antes de funciones trigonométricas)
+  // Operadores básicos — "sobre" ANTES que "entre" para no colisionar
   normalizado = normalizado
+    .replace(/\bsobre\b/gi, '/')
     .replace(/\bmas\b/gi, '+')
     .replace(/\bmenos\b/gi, '-')
     .replace(/\bpor\b/gi, '*')
@@ -61,13 +62,14 @@ function normalizarNotacionMatematica(texto) {
     .replace(/\bcos\s+(\w+)/gi, 'cos($1)')
     .replace(/\btan\s+(\w+)/gi, 'tan($1)');
   
-  // Funciones especiales
+  // Funciones especiales — capturar expresión completa hasta fin de línea o operador
   normalizado = normalizado
-    .replace(/\braiz\s+cuadrada\s+de\s+(\w+)/gi, 'sqrt($1)')
-    .replace(/\braiz\s+de\s+(\w+)/gi, 'sqrt($1)')
-    .replace(/\blogaritmo\s+natural\s+de\s+(\w+)/gi, 'ln($1)')
-    .replace(/\blogaritmo\s+de\s+(\w+)/gi, 'log($1)')
-    .replace(/\bvalor\s+absoluto\s+de\s+(\w+)/gi, 'abs($1)');
+    .replace(/\braiz\s+cuadrada\s+de\s+([^+\-*/,]+)/gi, (_, e) => `sqrt(${e.trim()})`)
+    .replace(/\braiz\s+de\s+([^+\-*/,]+)/gi, (_, e) => `sqrt(${e.trim()})`)
+    .replace(/\blogaritmo\s+natural\s+de\s+([^+\-*/,]+)/gi, (_, e) => `ln(${e.trim()})`)
+    .replace(/\blog\s+natural\s+de\s+([^+\-*/,]+)/gi, (_, e) => `ln(${e.trim()})`)
+    .replace(/\blogaritmo\s+de\s+([^+\-*/,]+)/gi, (_, e) => `log(${e.trim()})`)
+    .replace(/\bvalor\s+absoluto\s+de\s+([^+\-*/,]+)/gi, (_, e) => `abs(${e.trim()})`);
   
   // Cálculo - mejorar sintaxis para Wolfram
   // Integrales: agregar dx al final si no está
