@@ -41,7 +41,7 @@ function normalizarNotacionMatematica(texto) {
   // Operadores básicos — "sobre" ANTES que "entre" para no colisionar
   normalizado = normalizado
     .replace(/\bsobre\b/gi, '/')
-    .replace(/\bmas\b/gi, '+')
+    .replace(/\bm[aá]s\b/gi, '+')
     .replace(/\bmenos\b/gi, '-')
     .replace(/\bpor\b/gi, '*')
     .replace(/\bentre\b/gi, '/')

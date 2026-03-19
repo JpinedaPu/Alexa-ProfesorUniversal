@@ -157,7 +157,7 @@ async function obtenerKeyword(pregunta, historial = [], contextoFactual = null, 
                 .replace(/\b(\w+)\s+a\s+la\s+(\d+)\b/g, '$1^$2')
                 // Operadores — "sobre" ANTES que "entre" para no colisionar
                 .replace(/\bsobre\b/g, '/')
-                .replace(/\bmas\b/g, '+').replace(/\bmenos\b/g, '-')
+                .replace(/\bm[aá]s\b/g, '+').replace(/\bmenos\b/g, '-')
                 .replace(/\bpor\b/g, '*').replace(/\bentre\b/g, '/')
                 // Funciones — logaritmo natural ANTES que logaritmo genérico
                 .replace(/\blogaritmo\s+natural\s+de\b/g, 'ln(')
