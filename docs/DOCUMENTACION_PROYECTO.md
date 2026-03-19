@@ -16,7 +16,7 @@ Usuario → Alexa → AWS Lambda (us-east-1) → 5 IAs + 2 APIs imagen → Respu
 IAs y fuentes:
 ├── Claude 4.5 Haiku    (Amazon Bedrock)  — Síntesis de voz final
 ├── GPT-4.1 Mini        (OpenAI)          — Extracción de keywords
-├── Gemini 2.0 Flash    (Google)          — Contexto web actualizado
+├── Gemini 3.1 Flash-Lite (Google)        — Contexto web actualizado
 ├── Wolfram Alpha       (Full Results API)— Datos técnicos + gráficas + step-by-step
 ├── Wikipedia API                         — Contexto enciclopédico
 ├── NASA Images API                       — Imágenes científicas
@@ -50,7 +50,7 @@ lambda/
 │   ├── apl.js                        ← Generador APL 1.6 (visual)
 │   ├── claude.js                     ← Claude vía Bedrock
 │   ├── gpt.js                        ← GPT-4.1 Mini (keywords)
-│   ├── gemini.js                     ← Gemini 2.0 Flash
+│   ├── gemini.js                     ← Gemini 3.1 Flash-Lite
 │   ├── wolfram.js                    ← Wolfram Alpha (normal + SBS)
 │   ├── wikipedia.js
 │   └── traduccion.js
@@ -64,7 +64,6 @@ lambda/
 │   ├── timeoutManager.js
 │   ├── fallback.js
 │   ├── validateResponse.js
-│   ├── inputValidator.js
 │   ├── mathNotation.js
 │   ├── comparacion.js
 │   ├── reconstruccionPregunta.js
@@ -157,10 +156,14 @@ Políticas: `AWSLambdaBasicExecutionRole`, DynamoDB, S3, Bedrock Claude
 
 ### Automático (recomendado)
 ```bash
+# Deploy principal — repo privado → Lambda con modo secreto incluido
 git add .
 git commit -m "feat: descripción"
+git push private main
+# GitHub Actions despliega en ~30s
+
+# Deploy repo público (portfolio, opcional)
 git push origin main
-# GitHub Actions despliega en ~60s
 ```
 
 ### Variables de entorno
@@ -188,7 +191,7 @@ Variables requeridas: `OPENAI_API_KEY`, `WOLFRAM_APP_ID`, `GEMINI_API_KEY`, `CLA
 
 Generado en `services/apl.js`. Soporta:
 - Modo oscuro / claro (toggle por voz o botón)
-- Zoom dinámico (55%–120%, paso 10%)
+- Zoom dinámico (30%–150%, paso 15%)
 - Modo susurro (SSML `amazon:effect name="whispered"`)
 - Logo dinámico Wolfram sobre primer pod (solo cuando hay resultados)
 - Botones D-pad friendly (Fire Stick) con hover/focus

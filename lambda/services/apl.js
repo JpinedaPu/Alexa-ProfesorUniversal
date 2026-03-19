@@ -402,7 +402,7 @@ function generarAPL(isDark) {
                                     marginLeft: "24dp", marginRight: "24dp",
                                     alignItems: "center",
                                     items: [
-                                        { type: "Text", text: "🎯  Ir al Resultado Final", color: "#000000", fontSize: "20dp", fontWeight: "bold", textAlign: "center" },
+                                        { type: "Text", text: "Ir al Resultado Final", color: "#000000", fontSize: "20dp", fontWeight: "bold", textAlign: "center" },
                                         { type: "Text", text: "Toca aqui o di: ir al resultado", color: "#663300", fontSize: "12dp", textAlign: "center", marginTop: "4dp" }
                                     ]
                                 }
@@ -553,7 +553,7 @@ function generarAPL(isDark) {
                         paddingRight: "10dp",
                         backgroundColor: c.footer,
                         items: [
-                            { type: "Text", text: "Claude 4.5 Haiku · Wolfram Alpha · Wikipedia · Gemini 2.0 Flash",
+                            { type: "Text", text: "Claude 4.5 Haiku · Wolfram Alpha · Wikipedia · Gemini 3.1 Flash-Lite",
                               color: "#888888", fontSize: "9dp", grow: 1 }
                         ]
                     }

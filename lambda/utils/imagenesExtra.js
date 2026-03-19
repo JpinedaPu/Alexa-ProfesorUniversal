@@ -27,7 +27,7 @@ const NASA_EXCLUDE = /\b(diagram|illustration|graphic|chart|logo|artwork|animati
 async function buscarNASA(keyword, maxResults = 15) {
     const q = encodeURIComponent(keyword);
     const json = await httpsGet(
-        `https://images-api.nasa.gov/search?q=${q}&media_type=image&page_size=100`,
+        `https://images-api.nasa.gov/search?q=${q}&media_type=image&page_size=${Math.min(maxResults * 3, 50)}`,
         4000
     );
     if (!json || !json.collection || !Array.isArray(json.collection.items)) return [];

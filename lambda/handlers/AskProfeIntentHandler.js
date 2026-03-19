@@ -408,7 +408,7 @@ const AskProfeIntentHandler = {
         if (esPreguntaCientifica(question)) {
             console.log('[ROUTE] Detectada pregunta CIENTÍFICA');
             try {
-                const resultadoScience = await ejecutarRutaCientifica(question, keyword);
+                const resultadoScience = await ejecutarRutaCientifica(question, keyword, startTime);
                 if (resultadoScience) {
                     let speechOutput = resultadoScience.speech;
                     if (sessionAttributes.whisperMode)

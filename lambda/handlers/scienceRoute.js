@@ -50,7 +50,7 @@ function clasificarPreguntaCientifica(pregunta) {
  * @param {string} keyword
  * @returns {Promise<Object>}
  */
-async function ejecutarRutaCientifica(pregunta, keyword) {
+async function ejecutarRutaCientifica(pregunta, keyword, startTime = Date.now()) {
   console.log('[SCIENCE-ROUTE] Iniciando ruta científica');
   
   const tipo = clasificarPreguntaCientifica(pregunta);
@@ -66,7 +66,8 @@ async function ejecutarRutaCientifica(pregunta, keyword) {
   
   console.log(`[SCIENCE-ROUTE] Wolfram: ${wolfram.imagenes.length} imgs | Wiki: ${wiki.texto.length}ch | Extra: ${imagenesExtra.length} imgs | tipo: ${tipo}`);
   
-  // 2. Síntesis con Claude
+  // 2. Síntesis con Claude — budget dinámico basado en tiempo restante
+  const claudeBudget = Math.max(2000, 7600 - (Date.now() - startTime) - 200);
   const resultadoClaude = await consultarClaude(
     pregunta,
     wolfram.texto || '',
@@ -74,7 +75,7 @@ async function ejecutarRutaCientifica(pregunta, keyword) {
     '',
     keyword,
     [],
-    { timeout: 3000 }
+    { timeout: claudeBudget }
   );
   
   const speech = resultadoClaude.speech || 'Aquí está la información científica que buscabas.';

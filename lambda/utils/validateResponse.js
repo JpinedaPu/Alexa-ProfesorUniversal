@@ -21,9 +21,9 @@ module.exports.validateSpeech = (speech) => {
   const clean = speech.replace(/<[^>]+>/g, '').trim();
   if (clean.length < 2) return false;
   
-  // Validar SSML: solo rechazar si hay etiquetas desbalanceadas
-  // Esto previene errores de renderizado en dispositivos Alexa
-  const openTags = (speech.match(/<([a-zA-Z0-9:]+)(\s[^>]*)?>/g) || []).length;
+  // Validar SSML: ignorar self-closing tags, solo rechazar si hay etiquetas desbalanceadas
+  const selfClosing = (speech.match(/<[a-zA-Z0-9:]+[^>]*\/>/g) || []).length;
+  const openTags = (speech.match(/<([a-zA-Z0-9:]+)(\s[^>]*)?>/g) || []).length - selfClosing;
   const closeTags = (speech.match(/<\/(?:[a-zA-Z0-9:]+)>/g) || []).length;
   if (openTags !== closeTags) return false;
   

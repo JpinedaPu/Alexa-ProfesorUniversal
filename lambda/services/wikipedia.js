@@ -41,7 +41,7 @@ async function consultarWikipedia(keyword) {
                 'User-Agent': 'AlexaSkill-ProfesorUniversal/1.0 (github.com/JpinedaPu)',
                 'Accept': 'application/json'
             },
-            timeout: 3200 // Sincronizado para permitir los 3.0s del handler
+            timeout: 1100 // Ligeramente menor que TIMEOUTS.WIKI_TIMEOUT (1200ms) para que el socket cierre antes
         };
         console.log(`[WIKI] ⏱️ T+0ms | Consultando: "${keyword}"`);
         const req = https.get(url, options, (res) => {
@@ -90,7 +90,7 @@ async function consultarWikipedia(keyword) {
             });
         });
         req.on('timeout', () => {
-            console.log(`[WIKI] ❌ ERR_TIMEOUT | T+${Date.now() - startTime}ms | Límite: 3200ms`);
+            console.log(`[WIKI] ❌ ERR_TIMEOUT | T+${Date.now() - startTime}ms | Límite: 1100ms`);
             req.destroy();
             resolve({ texto: "", imagen: "", titulo: "" });
         });

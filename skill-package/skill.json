@@ -110,7 +110,7 @@
         "es-ES": {
           "name": "Profesor Universal IA",
           "summary": "Profesor educativo con IA: Claude, Wolfram Alpha, Wikipedia y Gemini.",
-          "description": "Skill educativa con Claude 4 Haiku, Wolfram Alpha, Wikipedia y Gemini 2.0. Responde preguntas de ciencia, matemáticas e historia con voz natural y visuales APL.",
+          "description": "Skill educativa con Claude 4.5 Haiku, Wolfram Alpha, Wikipedia y Gemini 3.1 Flash-Lite. Responde preguntas de ciencia, matemáticas e historia con voz natural y visuales APL.",
           "examplePhrases": [
             "Alexa, abre profesor universal",
             "¿Qué es el sol?",

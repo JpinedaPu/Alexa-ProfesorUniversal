@@ -63,8 +63,8 @@ Get-Content $envFile | ForEach-Object {
     }
 }
 
-# Verificar variables críticas
-$requiredVars = @("OPENAI_API_KEY", "WOLFRAM_APP_ID", "GEMINI_API_KEY", "ELEVENLABS_API_KEY")
+# Verificar variables críticas (ELEVENLABS_API_KEY es opcional — solo modo secreto)
+$requiredVars = @("OPENAI_API_KEY", "WOLFRAM_APP_ID", "GEMINI_API_KEY")
 $missingVars = @()
 
 foreach ($var in $requiredVars) {
@@ -79,15 +79,17 @@ if ($missingVars.Count -gt 0) {
     exit 1
 }
 
-$envJson = @{
-    Variables = @{
-        OPENAI_API_KEY = $envVars["OPENAI_API_KEY"]
-        WOLFRAM_APP_ID = $envVars["WOLFRAM_APP_ID"]
-        GEMINI_API_KEY = $envVars["GEMINI_API_KEY"]
-        ELEVENLABS_API_KEY = $envVars["ELEVENLABS_API_KEY"]
-        NODE_ENV = "production"
-    }
-} | ConvertTo-Json -Compress
+$vars = @{
+    OPENAI_API_KEY = $envVars["OPENAI_API_KEY"]
+    WOLFRAM_APP_ID = $envVars["WOLFRAM_APP_ID"]
+    GEMINI_API_KEY = $envVars["GEMINI_API_KEY"]
+    NODE_ENV = "production"
+}
+if ($envVars.ContainsKey("ELEVENLABS_API_KEY") -and -not [string]::IsNullOrWhiteSpace($envVars["ELEVENLABS_API_KEY"])) {
+    $vars["ELEVENLABS_API_KEY"] = $envVars["ELEVENLABS_API_KEY"]
+    Write-ColorOutput Green "✓ ELEVENLABS_API_KEY incluida (modo secreto)"
+}
+$envJson = @{ Variables = $vars } | ConvertTo-Json -Compress
 
 try {
     aws lambda update-function-configuration `

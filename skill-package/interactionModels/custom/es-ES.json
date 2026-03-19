@@ -398,7 +398,6 @@
             "siguiente",
             "siguiente paso",
             "más pasos",
-            "ver más",
             "avanza",
             "sigue",
             "continuar",
@@ -416,7 +415,6 @@
             "muéstrame el siguiente paso",
             "dame el siguiente paso",
             "sigue con la solución",
-            "más",
             "adelante"
           ]
         },
@@ -539,49 +537,7 @@
             "siguiente imagen",
             "siguientes imágenes",
             "muéstrame más imágenes",
-            "quiero ver más imágenes",
-            "ver más",
-            "más"
-          ]
-        },
-        {
-          "name": "SecretRouteIntent",
-          "slots": [
-            {
-              "name": "secretQuestion",
-              "type": "AMAZON.SearchQuery"
-            }
-          ],
-          "samples": [
-            "boaz {secretQuestion}",
-            "Boaz {secretQuestion}",
-            "palabra secreta {secretQuestion}",
-            "modo secreto {secretQuestion}",
-            "siete artes {secretQuestion}",
-            "artes liberales {secretQuestion}",
-            "trivium {secretQuestion}",
-            "quadrivium {secretQuestion}"
-          ]
-        },
-        {
-          "name": "ExplorarArteIntent",
-          "slots": [
-            {
-              "name": "arte",
-              "type": "ARTE_LIBERAL"
-            }
-          ],
-          "samples": [
-            "explícame {arte}",
-            "háblame de {arte}",
-            "qué es {arte}",
-            "enséñame {arte}",
-            "quiero aprender {arte}",
-            "cuéntame sobre {arte}",
-            "explora {arte}",
-            "explorar {arte}",
-            "más sobre {arte}",
-            "profundiza en {arte}"
+            "quiero ver más imágenes"
           ]
         },
         {
@@ -623,7 +579,6 @@
                   "aumenta zoom",
                   "zoom más",
                   "acercar imagen",
-                  "más",
                   "aumenta el zoom",
                   "amplía",
                   "ampliar"
@@ -641,7 +596,6 @@
                   "reduce zoom",
                   "zoom menos",
                   "alejar imagen",
-                  "menos",
                   "reduce el zoom",
                   "disminuir",
                   "disminuye"
@@ -702,81 +656,6 @@
                   "alto",
                   "fuerte",
                   "natural"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "ARTE_LIBERAL",
-          "values": [
-            {
-              "name": {
-                "value": "gramática",
-                "synonyms": [
-                  "gramatica",
-                  "la gramática",
-                  "la gramatica"
-                ]
-              }
-            },
-            {
-              "name": {
-                "value": "retórica",
-                "synonyms": [
-                  "retorica",
-                  "la retórica",
-                  "la retorica"
-                ]
-              }
-            },
-            {
-              "name": {
-                "value": "lógica",
-                "synonyms": [
-                  "logica",
-                  "la lógica",
-                  "la logica"
-                ]
-              }
-            },
-            {
-              "name": {
-                "value": "aritmética",
-                "synonyms": [
-                  "aritmetica",
-                  "la aritmética",
-                  "la aritmetica"
-                ]
-              }
-            },
-            {
-              "name": {
-                "value": "geometría",
-                "synonyms": [
-                  "geometria",
-                  "la geometría",
-                  "la geometria"
-                ]
-              }
-            },
-            {
-              "name": {
-                "value": "música",
-                "synonyms": [
-                  "musica",
-                  "la música",
-                  "la musica"
-                ]
-              }
-            },
-            {
-              "name": {
-                "value": "astronomía",
-                "synonyms": [
-                  "astronomia",
-                  "la astronomía",
-                  "la astronomia"
                 ]
               }
             }

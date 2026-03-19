@@ -141,6 +141,10 @@ async function obtenerKeyword(pregunta, historial = [], contextoFactual = null, 
         if (mathMatch) {
             const op = mathMatch[1];
             const expr = mathMatch[2].trim()
+                // Limpiar palabras en español no matemáticas
+                .replace(/\bla\s+funci[oó]n\b/gi, '')
+                .replace(/\bla\s+expresi[oó]n\b/gi, '')
+                .replace(/\bde\s+la\b/gi, '')
                 // Variables fonéticas
                 .replace(/\bequis\b/g, 'x')
                 .replace(/\bigriega\b/g, 'y')

@@ -69,7 +69,7 @@ async function traducir(texto, origen, destino, opciones = {}) {
         logStep('traduccionGPT', { origen, destino, ms: t1-t0, length: limpio.length });
     } catch (e) {
         logStep('errorGPT', { origen, destino, error: e.message });
-        resultado = fallbackSpeech('timeout');
+        resultado = limpio; // Fallback al texto original, no al mensaje de error
     }
 
     if (!validateSpeech(resultado)) resultado = fallbackSpeech('nodata');

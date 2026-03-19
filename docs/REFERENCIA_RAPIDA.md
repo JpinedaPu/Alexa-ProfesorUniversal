@@ -5,14 +5,14 @@
 ## Comandos Esenciales
 
 ```powershell
-# Deploy (el más usado)
-git add . && git commit -m "feat: descripción" && git push origin main
+# Deploy principal (con modo secreto incluido)
+git add . && git commit -m "feat: descripción" && git push private main
+
+# Deploy repo público (portfolio, opcional)
+git push origin main
 
 # Sincronizar .env local → Lambda
 .\scripts\configure-lambda-env.ps1 -FunctionName "AlexaProfesorUniversal"
-
-# Deploy modo secreto (sin GitHub)
-.\scripts\deploy-secreto.ps1 -FunctionName "AlexaProfesorUniversal"
 
 # Ver logs en tiempo real
 aws logs tail /aws/lambda/AlexaProfesorUniversal --follow --region us-east-1
@@ -71,7 +71,7 @@ aws logs filter-log-events --log-group-name /aws/lambda/AlexaProfesorUniversal -
 ```
 OPENAI_API_KEY      → GPT-4.1 Mini (keywords + conversión matemática)
 WOLFRAM_APP_ID      → Wolfram Alpha Full Results API
-GEMINI_API_KEY      → Gemini 2.0 Flash
+GEMINI_API_KEY      → Gemini 3.1 Flash-Lite
 CLAUDE_API_KEY      → Claude 4.5 Haiku (si no usas Bedrock directo)
 ELEVENLABS_API_KEY  → Solo para modo secreto (opcional)
 ```
@@ -111,7 +111,7 @@ modo susurro
 |-------|--------|--------|
 | "modo oscuro / modo claro" | DarkModeIntent | Cambia tema APL |
 | "modo susurro / voz normal" | WhisperModeIntent | Toggle SSML whisper |
-| "acercar / alejar" | ZoomIntent | Zoom ±10% (55–120%) |
+| "acercar / alejar" | ZoomIntent | Zoom ±15% (30–150%) |
 | "modo wolfram" | WolframAlphaModeIntent | Activa step-by-step |
 | "continúa" | ContinueWolframIntent | Siguiente página de pasos |
 | "ir al resultado" | SkipToResultIntent | Salta al resultado final |

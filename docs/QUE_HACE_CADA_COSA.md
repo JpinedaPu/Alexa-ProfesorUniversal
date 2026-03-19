@@ -8,7 +8,7 @@
 |----------|---------|-----|---------------|
 | **Claude 4.5 Haiku** | `services/claude.js` | Síntesis final — genera el speech y displayTop/Bottom | Siempre, es el "profesor" que habla |
 | **GPT-4.1 Mini** | `services/gpt.js` | Extrae keyword, convierte notación matemática | Inicio de cada request |
-| **Gemini 2.0 Flash** | `services/gemini.js` | Contexto web actualizado | Preguntas con datos recientes |
+| **Gemini 3.1 Flash-Lite** | `services/gemini.js` | Contexto web actualizado | Preguntas con datos recientes |
 | **Wolfram Alpha** | `services/wolfram.js` | Datos técnicos, gráficas, step-by-step | Matemáticas, física, datos numéricos |
 | **Wikipedia** | `services/wikipedia.js` | Contexto enciclopédico | Preguntas conceptuales/biográficas |
 | **NASA Images API** | `utils/imagenesExtra.js` | Imágenes científicas | Temas espaciales/científicos |
@@ -84,7 +84,6 @@ Devuelve JSON: `{ speech, displayTop, displayBottom, keyword }`
 | `comparacion.js` | Detecta preguntas comparativas ("compara X con Y") |
 | `fallback.js` | Mensajes de error amigables para el usuario |
 | `validateResponse.js` | Valida que el speech de Claude sea usable |
-| `inputValidator.js` | Sanitiza y valida la entrada del usuario |
 | `logger.js` | Logging estructurado con prefijos `[MÓDULO]` |
 
 ---

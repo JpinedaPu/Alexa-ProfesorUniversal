@@ -11,6 +11,7 @@ const Alexa = require('ask-sdk-core');
 const { generarAPL } = require('./services/apl');
 const { getFromCache, setCache } = require('./utils/cache');
 const { fallbackSpeech } = require('./utils/fallback');
+const { UI } = require('./config/constants');
 
 const { AskProfeIntentHandler }          = require('./handlers/AskProfeIntentHandler');
 const { WolframAlphaModeIntentHandler }  = require('./handlers/WolframAlphaModeIntentHandler');
@@ -214,7 +215,6 @@ const ZoomIntentHandler = {
                 .reprompt('Di acercar o alejar.').getResponse();
         }
         
-        const { UI } = require('./config/constants');
         // Aplicar zoom con límites de accesibilidad
         sa.zoomLevel = dir === 'out'
             ? Math.max(UI.MIN_ZOOM, (sa.zoomLevel || 85) - UI.ZOOM_STEP)
@@ -268,8 +268,6 @@ const APLUserEventHandler = {
     handle(h) {
         const args = h.requestEnvelope.request.arguments || [];
         const sa   = h.attributesManager.getSessionAttributes();
-        const { UI } = require('./config/constants');
-
         // Controles de zoom táctiles
         if (args[0] === 'zoomIn' || args[0] === 'zoomOut') {
             sa.zoomLevel = args[0] === 'zoomOut'

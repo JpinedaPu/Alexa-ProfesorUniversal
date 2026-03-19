@@ -173,19 +173,21 @@ Request entrante
 ```
 Desarrollador
      │
-     │  git push origin main
+     │  git push private main  (deploy principal con modo secreto)
      ▼
-GitHub Actions (.github/workflows/deploy-lambda.yml)
+GitHub Actions (.github/workflows/deploy-lambda-private.yml)
      │
      ├─ npm install (lambda/)
-     ├─ zip lambda/ (excluye: elevenlabs.js, SecretRoute*, artesLiberales*)
+     ├─ zip lambda/ (incluye archivos secretos)
      └─ aws lambda update-function-code → AlexaProfesorUniversal
                                                │
                                                ▼
-                                    Lambda actualizada (~60s)
+                                    Lambda actualizada (~30s)
 
-Modo Secreto (manual, sin GitHub):
+Repo público (portfolio, opcional):
      │
-     │  .\scripts\deploy-secreto.ps1
-     └─ zip solo archivos privados → aws lambda update-function-code
+     │  git push origin main
+     ▼
+GitHub Actions (.github/workflows/deploy-lambda.yml)
+     └─ zip lambda/ (excluye archivos secretos) → Lambda sin modo secreto
 ```
