@@ -565,6 +565,40 @@
             "amplía la imagen",
             "reduce la imagen"
           ]
+        },
+        {
+          "name": "SecretRouteIntent",
+          "samples": [
+            "activa modo secreto",
+            "modo secreto",
+            "artes liberales",
+            "las siete artes",
+            "trivium y quadrivium",
+            "enseñanzas masónicas",
+            "templo del conocimiento",
+            "maestro masón"
+          ]
+        },
+        {
+          "name": "ArteLiberalIntent",
+          "slots": [
+            {
+              "name": "arte",
+              "type": "AMAZON.SearchQuery"
+            },
+            {
+              "name": "pregunta",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "pregunta sobre {arte} {pregunta}",
+            "consulta de {arte} {pregunta}",
+            "{arte} {pregunta}",
+            "maestro de {arte} {pregunta}",
+            "enséñame {arte} {pregunta}",
+            "explícame {arte} {pregunta}"
+          ]
         }
       ],
       "types": [

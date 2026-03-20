@@ -1,0 +1,34 @@
+{
+  "version": "1.0",
+  "session": {
+    "new": false,
+    "sessionId": "amzn1.echo-api.session.test-repeat-01",
+    "application": { "applicationId": "amzn1.ask.skill.test" },
+    "user": { "userId": "amzn1.ask.account.test-user-general" },
+    "attributes": {
+      "lastQuestion": "quien fue napoleon bonaparte",
+      "lastKeyword": "Napoleon Bonaparte",
+      "history": []
+    }
+  },
+  "context": {
+    "System": {
+      "application": { "applicationId": "amzn1.ask.skill.test" },
+      "user": { "userId": "amzn1.ask.account.test-user-general" },
+      "device": { "deviceId": "amzn1.ask.device.test", "supportedInterfaces": { "Alexa.Presentation.APL": {} } },
+      "apiEndpoint": "https://api.amazonalexa.com",
+      "apiAccessToken": "test-token"
+    }
+  },
+  "request": {
+    "type": "IntentRequest",
+    "requestId": "amzn1.echo-api.request.test-repeat-01",
+    "timestamp": "2026-03-19T00:00:00Z",
+    "locale": "es-ES",
+    "intent": {
+      "name": "RepeatLastQuestionIntent",
+      "confirmationStatus": "NONE",
+      "slots": {}
+    }
+  }
+}

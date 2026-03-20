@@ -1,0 +1,119 @@
+﻿=== TEST SUITE 20260319-190725 ===
+Funcion: AlexaProfesorUniversal | Region: us-east-1 | Tests: 11
+
+
+--- TEST: ambig-01-deteccion ---
+Intent: AskProfeIntent | Slot: cuantas lunas tiene el planeta plutonio | SesionNueva: True | Atributos: False
+Invocando Lambda a las 19:07:25...
+Round-trip CLI: 11186ms
+Speech: La respuesta está tardando más de lo normal. ¿Puedes intentar de nuevo?
+Reprompt: Algo mas? | APL: True | ShouldEnd: False
+Atributos salida: memory, history, lastQuestion, lastSubject, lastKeyword, whisperMode, darkMode, zoomLevel, pendingLocationRequest, lastDisplayTop, lastDisplayBottom, lastImagenes, lastFuenteWolfram, lastFuenteWikipedia
+RESULTADO: OK
+Output: C:\Users\pined\Escritorio\Alexa\scripts\..\test-events\results\out-ambig-01-deteccion.json
+
+--- TEST: ambig-02-resolucion ---
+Intent: AskProfeIntent | Slot: el planeta | SesionNueva: False | Atributos: 1 1 1 1 1
+Atributos en sesion: pendingAmbiguity, history, lastQuestion, lastSubject, lastKeyword
+Invocando Lambda a las 19:07:47...
+Round-trip CLI: 7665ms
+Speech: ¡Plutón es un mundo fascinante! Aunque fue reclasificado como planeta enano en 2006, sigue siendo increíblemente interesante porque tiene 5 lunas orbitando a su alrededor. La más grande y famosa es Caronte, que es tan masiva que casi podríamos decir que Plutón y Caronte bailan juntos en el espacio. Las otras cuatro lunas más pequeñas son Hidra, Kerberos, Nix y Styx, todos nombres mitológicos que le dan un toque épico a este lejano sistema.
+Reprompt: Algo mas? | APL: True | ShouldEnd: False
+Atributos salida: pendingAmbiguity, history, lastQuestion, lastSubject, lastKeyword, memory, whisperMode, darkMode, zoomLevel, pendingLocationRequest, lastDisplayTop, lastDisplayBottom, lastImagenes, lastFuenteWolfram, lastFuenteWikipedia
+RESULTADO: OK
+Output: C:\Users\pined\Escritorio\Alexa\scripts\..\test-events\results\out-ambig-02-resolucion.json
+
+--- TEST: btn-01-continue-wolfram ---
+Intent: Alexa.Presentation.APL.UserEvent | Slot: ContinueWolfram | SesionNueva: False | Atributos: 1 1
+Atributos en sesion: wolframData, currentWolframStep
+Invocando Lambda a las 19:08:05...
+Round-trip CLI: 4973ms
+Speech: Excelente, hemos llegado a la solución final. La ecuación tiene dos respuestas: equis igual a dos y equis igual a menos dos. Ambos valores satisfacen la ecuación original cuando los sustituimos.
+Reprompt: ¿Tienes otra duda matemática? | APL: True | ShouldEnd: False
+Atributos salida: wolframData, currentWolframStep
+RESULTADO: OK
+Output: C:\Users\pined\Escritorio\Alexa\scripts\..\test-events\results\out-btn-01-continue-wolfram.json
+
+--- TEST: btn-02-skip-to-result ---
+Intent: Alexa.Presentation.APL.UserEvent | Slot: SkipToResult | SesionNueva: False | Atributos: 1 1
+Atributos en sesion: wolframData, currentWolframStep
+Invocando Lambda a las 19:08:21...
+Round-trip CLI: 4501ms
+Speech: La solución es x igual a 2 o x igual a menos 2. Estas son las dos raíces reales de la ecuación cuadrática.
+Reprompt: ¿Algo más? | APL: True | ShouldEnd: False
+Atributos salida: wolframData, currentWolframStep
+RESULTADO: OK
+Output: C:\Users\pined\Escritorio\Alexa\scripts\..\test-events\results\out-btn-02-skip-to-result.json
+
+--- TEST: math-01-derivada ---
+Intent: AskProfeIntent | Slot: derivada de x al cubo mas dos x | SesionNueva: True | Atributos: False
+Invocando Lambda a las 19:08:36...
+Round-trip CLI: 7370ms
+Speech: ¡Excelente pregunta de cálculo! La derivada de x al cubo más dos x es tres x al cuadrado más dos. Esto significa que la pendiente de la función original cambia según el valor de x, y nuestra derivada es una parábola que siempre es positiva, lo que nos dice que la función original siempre está creciendo.
+Reprompt: Algo mas? | APL: True | ShouldEnd: False
+Atributos salida: memory, history, lastQuestion, lastSubject, lastKeyword, whisperMode, darkMode, zoomLevel, pendingLocationRequest, lastDisplayTop, lastDisplayBottom, lastImagenes, lastImagenesPasos, lastFuenteWolfram, lastFuenteWikipedia
+RESULTADO: OK
+Output: C:\Users\pined\Escritorio\Alexa\scripts\..\test-events\results\out-math-01-derivada.json
+
+--- TEST: math-02-integral ---
+Intent: AskProfeIntent | Slot: integral de dos x mas cinco | SesionNueva: True | Atributos: False
+Invocando Lambda a las 19:08:54...
+Round-trip CLI: 8087ms
+Speech: ¡Excelente pregunta de cálculo! La integral de dos x más cinco es súper elegante. Tenemos que integrar cada término por separado: la integral de dos x es x al cuadrado, y la integral de cinco es cinco x. El resultado final es x al cuadrado más cinco x, más la constante de integración C. ¡Recuerda que esa constante es fundamental en las integrales indefinidas!
+Reprompt: Algo mas? | APL: True | ShouldEnd: False
+Atributos salida: memory, history, lastQuestion, lastSubject, lastKeyword, whisperMode, darkMode, zoomLevel, pendingLocationRequest, lastDisplayTop, lastDisplayBottom, lastImagenes, lastImagenesPasos, lastFuenteWolfram, lastFuenteWikipedia
+RESULTADO: OK
+Output: C:\Users\pined\Escritorio\Alexa\scripts\..\test-events\results\out-math-02-integral.json
+
+--- TEST: normal-01-general ---
+Intent: AskProfeIntent | Slot: quien fue napoleon bonaparte | SesionNueva: True | Atributos: False
+Invocando Lambda a las 19:09:13...
+Round-trip CLI: 7560ms
+Speech: Napoleón Bonaparte fue uno de los personajes más fascinantes de la historia mundial. Nacido el 15 de agosto de 1769 en Córcega, este general y estadista francés se convirtió en una figura legendaria durante la Revolución Francesa, liderando campañas militares que transformaron Europa. Gobernó Francia como Napoleón I hasta su caída en 1815, y murió en el exilio el 5 de mayo de 1821, dejando un legado imborrable en la política, el derecho y la estrategia militar.
+Reprompt: Algo mas? | APL: True | ShouldEnd: False
+Atributos salida: memory, history, lastQuestion, lastSubject, lastKeyword, whisperMode, darkMode, zoomLevel, pendingLocationRequest, imagenesExtraPool, imagenesExtraOffset, lastDisplayTop, lastDisplayBottom, lastImagenes, lastFuenteWolfram, lastFuenteWikipedia
+RESULTADO: OK
+Output: C:\Users\pined\Escritorio\Alexa\scripts\..\test-events\results\out-normal-01-general.json
+
+--- TEST: normal-02-wolfram-dinamica ---
+Intent: AskProfeIntent | Slot: cuantos habitantes tiene japon | SesionNueva: True | Atributos: False
+Invocando Lambda a las 19:09:31...
+Round-trip CLI: 9577ms
+Speech: ¡Japón es un país fascinante con aproximadamente 123 a 124 millones de habitantes! Esto lo posiciona como el duodécimo país más poblado del mundo, aunque enfrenta un desafío demográfico interesante: su población ha estado disminuyendo desde su pico de 128.5 millones en 2010. Tokyo, la capital, es la metrópolis más grande con casi 14 millones de personas, seguida por Yokohama con 3.7 millones y Osaka con 2.7 millones. Es un país donde la tecnología y la tradición conviven en ciudades increíblemente densas y organizadas.
+Reprompt: Algo mas? | APL: True | ShouldEnd: False
+Atributos salida: memory, history, lastQuestion, lastSubject, lastKeyword, whisperMode, darkMode, zoomLevel, pendingLocationRequest, imagenesExtraPool, imagenesExtraOffset, lastDisplayTop, lastDisplayBottom, lastImagenes, lastFuenteWolfram, lastFuenteWikipedia
+RESULTADO: OK
+Output: C:\Users\pined\Escritorio\Alexa\scripts\..\test-events\results\out-normal-02-wolfram-dinamica.json
+
+--- TEST: repeat-01-ultima-pregunta ---
+Intent: RepeatLastQuestionIntent | Slot:  | SesionNueva: False | Atributos: 1 1 1
+Atributos en sesion: lastQuestion, lastKeyword, history
+Invocando Lambda a las 19:09:52...
+Round-trip CLI: 3487ms
+Speech: Tu última pregunta fue: cuantos habitantes tiene japon. ¿Quieres que te la responda de nuevo o tienes otra pregunta?
+Reprompt: ¿Quieres que te responda de nuevo o tienes otra pregunta? | APL: False | ShouldEnd: False
+Atributos salida: lastQuestion, lastKeyword, history, pendingRepeat
+RESULTADO: OK
+Output: C:\Users\pined\Escritorio\Alexa\scripts\..\test-events\results\out-repeat-01-ultima-pregunta.json
+
+--- TEST: science-01-astronomia ---
+Intent: AskProfeIntent | Slot: cuantas lunas tiene jupiter | SesionNueva: True | Atributos: False
+Invocando Lambda a las 19:10:06...
+Round-trip CLI: 9030ms
+Speech: ¡Júpiter es un verdadero imperio de lunas! Este gigante gaseoso tiene 95 lunas confirmadas, lo que lo convierte en el planeta con más satélites de todo nuestro Sistema Solar. Es como si Júpiter fuera un pequeño sistema planetario en sí mismo, ¡increíble!
+Reprompt: Algo mas? | APL: True | ShouldEnd: False
+Atributos salida: memory, history, lastQuestion, lastSubject, lastKeyword, whisperMode, darkMode, zoomLevel, pendingLocationRequest, imagenesExtraPool, imagenesExtraOffset, lastDisplayTop, lastDisplayBottom, lastImagenes, lastFuenteWolfram, lastFuenteWikipedia
+RESULTADO: OK
+Output: C:\Users\pined\Escritorio\Alexa\scripts\..\test-events\results\out-science-01-astronomia.json
+
+--- TEST: wolfmode-01-primera-llamada ---
+Intent: WolframAlphaModeIntent | Slot: x al cuadrado menos cuatro igual a cero | SesionNueva: True | Atributos: False
+Invocando Lambda a las 19:10:26...
+Round-trip CLI: 7602ms
+Speech: Factorizamos el lado izquierdo como diferencia de cuadrados: (x - 2)(x + 2) = 0. Luego separamos en dos ecuaciones: x - 2 = 0 y x + 2 = 0. Del primer caso, sumamos 2 a ambos lados y obtenemos x = 2. Cuando quieras continuar, di continúa.
+Reprompt: Di continúa para ver los siguientes pasos. | APL: True | ShouldEnd: False
+Atributos salida: wolframData, currentWolframStep
+RESULTADO: OK
+Output: C:\Users\pined\Escritorio\Alexa\scripts\..\test-events\results\out-wolfmode-01-primera-llamada.json
+
+=== RESUMEN: OK=11 FAIL=0 TOTAL_MS=199509 ===

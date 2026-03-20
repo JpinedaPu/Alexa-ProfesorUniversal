@@ -1,0 +1,26 @@
+﻿=== TEST SUITE 20260319-191458 ===
+Funcion: AlexaProfesorUniversal | Region: us-east-1 | Tests: 2
+
+
+--- TEST: ambig-01-deteccion ---
+Intent: AskProfeIntent | Slot: cuantas lunas tiene el planeta plutonio | SesionNueva: True | Atributos: False
+Invocando Lambda a las 19:14:58...
+Round-trip CLI: 10022ms
+Speech: ¡Excelente pregunta! Plutón tiene cinco lunas fascinantes: Caronte, la más grande y casi tan masiva como el propio Plutón; Styx, Nix, Kerberos e Hydra, todas ellas descubiertas gracias a la misión New Horizons de la NASA. Es un sistema lunar único en nuestro sistema solar, donde Caronte es tan grande que prácticamente orbitan juntos como un sistema binario.
+Reprompt: Algo mas? | APL: True | ShouldEnd: False
+Atributos salida: memory, history, lastQuestion, lastSubject, lastKeyword, whisperMode, darkMode, zoomLevel, pendingLocationRequest, lastDisplayTop, lastDisplayBottom, lastImagenes, lastFuenteWolfram, lastFuenteWikipedia
+RESULTADO: OK
+Output: C:\Users\pined\Escritorio\Alexa\scripts\..\test-events\results\out-ambig-01-deteccion.json
+
+--- TEST: ambig-02-resolucion ---
+Intent: AskProfeIntent | Slot: el planeta | SesionNueva: False | Atributos: 1 1 1 1 1
+Atributos en sesion: pendingAmbiguity, history, lastQuestion, lastSubject, lastKeyword
+Invocando Lambda a las 19:15:08...
+Round-trip CLI: 8364ms
+Speech: ¡Plutón tiene 5 lunas fascinantes! La más grande y famosa es Caronte, que es tan masiva que casi orbita a Plutón en lugar de ser orbitada por él, formando un sistema binario único. Las otras cuatro lunas más pequeñas son Styx, Nix, Kerberos e Hydra, descubiertas gracias a las misiones espaciales modernas.
+Reprompt: Algo mas? | APL: True | ShouldEnd: False
+Atributos salida: pendingAmbiguity, history, lastQuestion, lastSubject, lastKeyword, memory, whisperMode, darkMode, zoomLevel, pendingLocationRequest, lastDisplayTop, lastDisplayBottom, lastImagenes, lastFuenteWolfram, lastFuenteWikipedia
+RESULTADO: OK
+Output: C:\Users\pined\Escritorio\Alexa\scripts\..\test-events\results\out-ambig-02-resolucion.json
+
+=== RESUMEN: OK=2 FAIL=0 TOTAL_MS=18854 ===

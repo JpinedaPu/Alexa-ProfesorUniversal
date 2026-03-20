@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "session": {
+    "new": false,
+    "sessionId": "amzn1.echo-api.session.test-chain-01",
+    "application": { "applicationId": "amzn1.ask.skill.test" },
+    "user": { "userId": "amzn1.ask.account.test-chain-user" },
+    "attributes": "__INJECT_FROM_PREVIOUS__"
+  },
+  "context": {
+    "System": {
+      "application": { "applicationId": "amzn1.ask.skill.test" },
+      "user": { "userId": "amzn1.ask.account.test-chain-user" },
+      "device": { "deviceId": "amzn1.ask.device.test", "supportedInterfaces": { "Alexa.Presentation.APL": {} } },
+      "apiEndpoint": "https://api.amazonalexa.com",
+      "apiAccessToken": "test-token"
+    }
+  },
+  "request": {
+    "type": "IntentRequest",
+    "requestId": "amzn1.echo-api.request.chain-02",
+    "timestamp": "2026-03-20T00:00:01Z",
+    "locale": "es-ES",
+    "intent": {
+      "name": "AskProfeIntent",
+      "confirmationStatus": "NONE",
+      "slots": { "question": { "name": "question", "value": "el de mexico", "confirmationStatus": "NONE" } }
+    }
+  }
+}

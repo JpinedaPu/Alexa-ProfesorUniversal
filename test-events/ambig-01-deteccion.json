@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "session": {
+    "new": true,
+    "sessionId": "amzn1.echo-api.session.test-ambig-01",
+    "application": { "applicationId": "amzn1.ask.skill.test" },
+    "user": { "userId": "amzn1.ask.account.test-user-general" },
+    "attributes": {}
+  },
+  "context": {
+    "System": {
+      "application": { "applicationId": "amzn1.ask.skill.test" },
+      "user": { "userId": "amzn1.ask.account.test-user-general" },
+      "device": { "deviceId": "amzn1.ask.device.test", "supportedInterfaces": { "Alexa.Presentation.APL": {} } },
+      "apiEndpoint": "https://api.amazonalexa.com",
+      "apiAccessToken": "test-token"
+    }
+  },
+  "request": {
+    "type": "IntentRequest",
+    "requestId": "amzn1.echo-api.request.test-ambig-01",
+    "timestamp": "2026-03-19T00:00:00Z",
+    "locale": "es-ES",
+    "intent": {
+      "name": "AskProfeIntent",
+      "confirmationStatus": "NONE",
+      "slots": {
+        "question": { "name": "question", "value": "cuantas lunas tiene el planeta plutonio", "confirmationStatus": "NONE" }
+      }
+    }
+  }
+}
