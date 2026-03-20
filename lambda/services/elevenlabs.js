@@ -62,14 +62,13 @@ async function generarAudioPremium(texto, arte = 'gramatica') {
 
     console.log(`[ELEVENLABS] Audio generado en ${Date.now() - startTime}ms`);
 
-    // Subir a S3
+    // Subir a S3 (sin ACL - el bucket usa políticas de bucket)
     const key = `audio/premium/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.mp3`;
     await s3.send(new PutObjectCommand({
       Bucket: BUCKET,
       Key: key,
       Body: Buffer.from(response.data),
       ContentType: 'audio/mpeg',
-      ACL: 'public-read',
       CacheControl: 'max-age=86400' // 24h
     }));
 
