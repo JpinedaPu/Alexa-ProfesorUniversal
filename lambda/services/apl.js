@@ -245,7 +245,7 @@ function generarAPL(isDark) {
                             {
                                 type: "Container",
                                 width: "100%",
-                                when: "${templateData.textoSuperior && templateData.textoSuperior != '' && !templateData.soloImagenes}",
+                                when: "${!!(templateData.textoSuperior) && templateData.textoSuperior != '' && !templateData.soloImagenes}",
                                 paddingLeft: "20dp", paddingRight: "20dp",
                                 paddingTop: "18dp", paddingBottom: "14dp",
                                 backgroundColor: c.content,
@@ -259,7 +259,7 @@ function generarAPL(isDark) {
                             {
                                 type: "Container",
                                 width: "100%",
-                                display: "${templateData.fuenteWolfram && templateData.imagenes && templateData.imagenes.length > 0 ? 'normal' : 'none'}",
+                                when: "${templateData.fuenteWolfram && templateData.imagenes && templateData.imagenes.length > 0 && !templateData.soloImagenes}",
                                 alignItems: "center",
                                 paddingTop: "10dp",
                                 paddingBottom: "4dp",
@@ -311,7 +311,7 @@ function generarAPL(isDark) {
                                 width: "100%",
                                 paddingTop: "8dp", paddingBottom: "8dp",
                                 backgroundColor: c.content,
-                                display: "${templateData.fuenteWikipedia ? 'normal' : 'none'}",
+                                when: "${templateData.fuenteWikipedia && !templateData.soloImagenes}",
                                 items: [
                                     { type: "Image", source: "https://upload.wikimedia.org/wikipedia/commons/6/63/Wikipedia-logo.png", width: "26dp", height: "26dp", scale: "best-fit" },
                                     { type: "Text", text: " Wikipedia", color: "#FFFFFF", fontSize: "13dp", fontWeight: "bold", paddingLeft: "4dp" }
@@ -319,11 +319,10 @@ function generarAPL(isDark) {
                             },
 
                             // 5. Botón "Iniciar paso a paso"
-                            // Solo aparece cuando canStepByStep=true Y NO se ha iniciado el modo (masPasosDisponibles=false)
                             {
                                 type: "Container",
                                 width: "100%",
-                                display: "${templateData.canStepByStep && !templateData.masPasosDisponibles ? 'normal' : 'none'}",
+                                when: "${templateData.canStepByStep && !templateData.masPasosDisponibles && !templateData.soloImagenes}",
                                 alignItems: "center",
                                 justifyContent: "center",
                                 paddingTop: "12dp",
@@ -356,11 +355,10 @@ function generarAPL(isDark) {
                             },
 
                             // 6. Botón "Ver siguientes pasos"
-                            // Solo aparece cuando masPasosDisponibles=true (ya se inició el modo paso a paso)
                             {
                                 type: "Container",
                                 width: "100%",
-                                display: "${templateData.masPasosDisponibles ? 'normal' : 'none'}",
+                                when: "${templateData.masPasosDisponibles}",
                                 alignItems: "center",
                                 justifyContent: "center",
                                 paddingTop: "12dp",
@@ -393,11 +391,10 @@ function generarAPL(isDark) {
                             },
 
                             // 7. Botón "Ir al resultado final"
-                            // Solo aparece cuando masPasosDisponibles=true (ya se inició el modo paso a paso)
                             {
                                 type: "Container",
                                 width: "100%",
-                                display: "${templateData.masPasosDisponibles ? 'normal' : 'none'}",
+                                when: "${templateData.masPasosDisponibles}",
                                 alignItems: "center",
                                 justifyContent: "center",
                                 paddingTop: "12dp",
@@ -449,7 +446,7 @@ function generarAPL(isDark) {
                                 width: "100%",
                                 data: "${templateData.imagenesExtra || []}",
                                 numbered: false,
-                                display: "${templateData.imagenesExtra && templateData.imagenesExtra.length > 0 && !(templateData.imagenes && templateData.imagenes.length > 0) && !templateData.soloImagenes ? 'normal' : 'none'}",
+                                when: "${templateData.imagenesExtra && templateData.imagenesExtra.length > 0 && !(templateData.imagenes && templateData.imagenes.length > 0) && !templateData.soloImagenes}",
                                 items: [
                                     {
                                         type: "Container",
@@ -511,7 +508,7 @@ function generarAPL(isDark) {
                             {
                                 type: "Container",
                                 width: "100%",
-                                display: "${templateData.hayMasImagenes ? 'normal' : 'none'}",
+                                when: "${templateData.hayMasImagenes}",
                                 alignItems: "center",
                                 justifyContent: "center",
                                 paddingTop: "12dp",
