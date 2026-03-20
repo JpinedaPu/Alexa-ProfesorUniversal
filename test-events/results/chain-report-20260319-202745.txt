@@ -1,0 +1,15 @@
+﻿=== CHAIN TEST SUITE 20260319-202745 ===
+
+=== CADENA:  ===
+CADENA OK: avg=0ms max=0ms
+
+=== CADENA:  ===
+CADENA OK: avg=0ms max=0ms
+
+=== CADENA:  ===
+CADENA OK: avg=0ms max=0ms
+
+=== CADENA:  ===
+CADENA OK: avg=0ms max=0ms
+
+=== RESUMEN: OK=4 FAIL=0 TOTAL_MS=352 ===

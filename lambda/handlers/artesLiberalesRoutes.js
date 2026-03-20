@@ -122,7 +122,7 @@ FORMATO DE RESPUESTA (JSON):
             [], 
             { 
                 prompt: promptCompleto,
-                timeout: 5000 
+                timeout: 4000 // 4s para Claude, dejando 6s para ElevenLabs
             }
         );
         

@@ -56,7 +56,7 @@ async function generarAudioPremium(texto, arte = 'gramatica') {
           'Content-Type': 'application/json'
         },
         responseType: 'arraybuffer',
-        timeout: 5000 // 5s máximo
+        timeout: 10000 // 10s máximo para generación de audio
       }
     );
 

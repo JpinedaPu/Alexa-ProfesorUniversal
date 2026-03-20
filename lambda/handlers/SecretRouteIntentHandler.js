@@ -42,7 +42,7 @@ const SecretModeIntentHandler = {
                       '¿Qué arte deseas explorar en tu camino hacia la luz?';
         
         try {
-            // Generar audio premium con voz del Maestro Masón
+            // Generar audio premium con voz del Maestro Masón (timeout más largo para primera llamada)
             const audioUrl = await generarAudioPremium(speech, 'maestro');
             
             // APL con símbolos masónicos
