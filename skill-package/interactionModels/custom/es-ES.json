@@ -569,14 +569,20 @@
         {
           "name": "SecretRouteIntent",
           "samples": [
-            "Boaz",
-            "luz y verdad",
-            "abre el templo",
+            "la palabra es Boaz",
+            "pronuncio la palabra Boaz",
+            "digo la palabra sagrada Boaz",
+            "mi palabra es Boaz",
+            "abre el templo del conocimiento",
+            "activa el templo del conocimiento",
+            "quiero entrar al templo",
             "las siete artes liberales",
             "trivium y quadrivium",
             "enseñanzas masónicas",
             "templo del conocimiento",
-            "maestro masón"
+            "activa el modo de las artes liberales",
+            "quiero las artes liberales",
+            "modo artes liberales"
           ]
         },
         {
