@@ -52,6 +52,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: Wait for Lambda to be ready
+        run: |
+          echo "⏳ Esperando que Lambda esté libre..."
+          aws lambda wait function-updated \
+            --function-name AlexaProfesorUniversal \
+            --region us-east-1
+          echo "✅ Lambda lista para deploy"
+
       - name: Deploy to Lambda
         run: |
           aws lambda update-function-code \
