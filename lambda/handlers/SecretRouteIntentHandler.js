@@ -40,7 +40,7 @@ const SecretModeIntentHandler = {
             const audioUrl = await generarAudioPremium(speech, 'maestro');
             console.log(`[MODO-SECRETO] Audio URL: ${audioUrl}`);
 
-            const ssml = `<speak><audio src="${audioUrl}"/></speak>`;
+            const ssml = `<audio src="${audioUrl}"/>`;
             console.log(`[MODO-SECRETO] SSML a enviar: ${ssml}`);
 
             // Verificar soporte APL
@@ -69,7 +69,7 @@ const SecretModeIntentHandler = {
 
             const response = handlerInput.responseBuilder
                 .speak(ssml)
-                .reprompt('<speak>¿Qué arte liberal deseas estudiar, hermano?</speak>')
+                .reprompt('¿Qué arte liberal deseas estudiar, hermano?')
                 .getResponse();
 
             console.log(`[MODO-SECRETO] Response outputSpeech: ${JSON.stringify(response.response?.outputSpeech)}`);
