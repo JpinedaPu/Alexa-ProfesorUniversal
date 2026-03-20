@@ -67,6 +67,8 @@ test-events/results/*.json
 wolfram_test*.json
 response-secret-*.json
 test-secret-*.json
+test-wolfram-*.js
+w*.json
 
 # OS
 .DS_Store
