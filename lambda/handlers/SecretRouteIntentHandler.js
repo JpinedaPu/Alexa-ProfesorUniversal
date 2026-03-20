@@ -40,7 +40,7 @@ const SecretModeIntentHandler = {
             const audioUrl = await generarAudioPremium(speech, 'maestro');
             console.log(`[MODO-SECRETO] Audio URL: ${audioUrl}`);
 
-            const ssml = `<audio src="${audioUrl}"/>`;
+            const ssml = `<audio src="${audioUrl}"/> <break time="500ms"/>`;
             console.log(`[MODO-SECRETO] SSML a enviar: ${ssml}`);
 
             // Verificar soporte APL

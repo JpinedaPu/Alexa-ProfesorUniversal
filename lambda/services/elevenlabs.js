@@ -41,8 +41,9 @@ async function generarAudioPremium(texto, arte = 'gramatica') {
 
   try {
     // Llamada a ElevenLabs API
+    // output_format: mp3_22050_32 = 22050Hz, 32kbps — formato compatible con Alexa SSML
     const response = await axios.post(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_22050_32`,
       {
         text: texto,
         model_id: 'eleven_multilingual_v2',
