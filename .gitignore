@@ -1,70 +1,33 @@
-# Versión Alexa Hosted (privada — keys hardcodeadas, solo uso local)
-alexa-hosted-version/
-
-# Dependencies
+# ── Dependencias ─────────────────────────────────────────────────────────────
 node_modules/
 lambda/node_modules/
 
-# Secretos: NUNCA subir al repositorio
+# ── Secretos ─────────────────────────────────────────────────────────────────
 .env
 lambda/.env
-alexa-hosted-version/.env
 **/.env
 .env.*
-*.env.local
 
-# Modo secreto - archivos solo en repo privado
-lambda/handlers/SecretRouteIntentHandler.js
-lambda/handlers/artesLiberalesRoutes.js
-lambda/services/elevenlabs.js
-docs/MODO_SECRETO.md
-
-# READMEs locales
-README-LOCAL.md
-lambda/README-LOCAL.md
-
-# Documentación temporal
-*-ANALISIS.md
-LIMPIEZA-*.md
-PROBLEMA-*.md
-DEPLOY-*.md
-RESUMEN-*.md
-ESTADO-*.md
-ARCHIVOS-*.md
-
-# Excepciones: documentación útil en docs/
-!docs/RUTAS-IMPLEMENTADAS.md
-
-# Deploy artifacts
-lambda_deploy.zip
+# ── Deploy artifacts ─────────────────────────────────────────────────────────
 *.zip
-build.zip
+lambda_deploy.zip
+lambda_url.txt
 
-# ASK CLI internal state (contiene skill IDs sensibles)
+# ── ASK CLI ──────────────────────────────────────────────────────────────────
 .ask/ask-states.json
 
-# Logs y temporales
+# ── Logs y temporales ────────────────────────────────────────────────────────
 *.log
-coverage/
-dist/
-tmp/
 *.tmp
+w1.json
+w2.json
 out-*.json
 response-*.json
 test-event-*.json
-lambda/response-*.json
-lambda/out-*.json
+test-events/results/
 
-# Test outputs
-tests/response-*.json
-tests/out-*.json
-scripts/response_*.json
-scripts/bedrock-*-response.json
-
-# OS
+# ── OS / IDE ─────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
-
-# IDE
 .vscode/launch.json
 .idea/
