@@ -9,7 +9,8 @@
 
 module.exports = {
     // Timeouts para servicios de IA principales
-    WOLFRAM_TIMEOUT: 6000,              // Wolfram Alpha - permite cálculos complejos y step-by-step
+    WOLFRAM_TIMEOUT: 3500,              // Wolfram Alpha - consultas normales (reducido para cumplir budget)
+    WOLFRAM_TIMEOUT_SBS: 4500,          // Wolfram Alpha step-by-step - cálculos complejos
     CLAUDE_TIMEOUT: 4000,               // Claude Bedrock - síntesis educativa (aumentado para respuestas complejas)
     GEMINI_TIMEOUT: 5000,               // Google Gemini - datos actualizados
     OPENAI_TIMEOUT: 3000,               // OpenAI GPT - keyword extraction

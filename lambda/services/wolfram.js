@@ -154,7 +154,7 @@ async function consultarWolfram(keyword, userLocation = null, options = {}) {
  * @param {string} targetPodId - ID del pod que queremos extraer (opcional, solo para step-by-step)
  * @returns {Promise<Object>}
  */
-function consultarWolframInternal(keyword, userLocation, podstate, startTime, targetPodId = null, timeoutMs = 5000) {
+function consultarWolframInternal(keyword, userLocation, podstate, startTime, targetPodId = null, timeoutMs = 3500) {
     return new Promise((resolve) => {
         const q = encodeURIComponent(keyword);
         const locationParam = userLocation ? `&location=${encodeURIComponent(userLocation)}` : '';
@@ -164,7 +164,8 @@ function consultarWolframInternal(keyword, userLocation, podstate, startTime, ta
             : (podstate ? `&podstate=${encodeURIComponent(podstate)}` : '');
         // scantimeout/podtimeout ajustados al presupuesto disponible
         // Para SBS (podstate presente) necesitamos al menos 3s internos
-        const wScan = podstate ? Math.min(4, Math.max(2, Math.floor(timeoutMs / 1000) - 1)) : Math.min(2, Math.floor(timeoutMs / 2000));
+        // Para consultas normales: 1.5s es suficiente para cálculos simples
+        const wScan = podstate ? Math.min(4, Math.max(2, Math.floor(timeoutMs / 1000) - 1)) : 1.5;
         const url = `https://api.wolframalpha.com/v2/query?appid=${WOLFRAM_APP_ID}&input=${q}&output=json&format=image,plaintext&mag=2&width=800&units=metric${locationParam}${podstateParam}&scantimeout=${wScan}&podtimeout=${wScan}&formattimeout=1.5&parsetimeout=1.5`;
 
         const httpsOptions = {
