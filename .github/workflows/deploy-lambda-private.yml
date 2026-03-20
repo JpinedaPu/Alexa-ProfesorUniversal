@@ -26,6 +26,18 @@ jobs:
         working-directory: lambda
         run: npm install --omit=dev
 
+      - name: Verify secret files present
+        run: |
+          MISSING=""
+          for f in lambda/handlers/SecretRouteIntentHandler.js lambda/handlers/artesLiberalesRoutes.js lambda/services/elevenlabs.js; do
+            if [ ! -f "$f" ]; then MISSING="$MISSING $f"; fi
+          done
+          if [ -n "$MISSING" ]; then
+            echo "❌ DEPLOY ABORTADO — Archivos secretos ausentes:$MISSING"
+            exit 1
+          fi
+          echo "✅ Archivos secretos presentes"
+
       - name: Zip Lambda package
         run: |
           cd lambda
