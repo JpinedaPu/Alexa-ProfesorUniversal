@@ -1,27 +1,11 @@
 {
   "version": "1.0",
   "session": {
-    "new": false,
-    "sessionId": "amzn1.echo-api.session.test-science-chain",
+    "new": true,
+    "sessionId": "amzn1.echo-api.session.test-science-02",
     "application": { "applicationId": "amzn1.ask.skill.test" },
     "user": { "userId": "amzn1.ask.account.test-user-science" },
-    "attributes": {
-      "memory": {},
-      "history": [
-        { "role": "user", "content": "cuantas lunas tiene jupiter" },
-        { "role": "assistant", "content": "Jupiter tiene 95 lunas confirmadas." }
-      ],
-      "lastQuestion": "cuantas lunas tiene jupiter",
-      "lastSubject": "Jupiter",
-      "lastKeyword": "Jupiter moons number",
-      "whisperMode": false,
-      "darkMode": false,
-      "zoomLevel": 85,
-      "pendingLocationRequest": null,
-      "imagenesExtraOffset": 6,
-      "lastFuenteWolfram": true,
-      "lastFuenteWikipedia": false
-    }
+    "attributes": {}
   },
   "context": {
     "System": {
@@ -34,8 +18,8 @@
   },
   "request": {
     "type": "IntentRequest",
-    "requestId": "amzn1.echo-api.request.science-02-chain",
-    "timestamp": "2026-03-20T00:00:01Z",
+    "requestId": "amzn1.echo-api.request.science-02",
+    "timestamp": "2026-03-20T00:00:00Z",
     "locale": "es-ES",
     "intent": {
       "name": "AskProfeIntent",

@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'lambda/**'
   workflow_dispatch:
 
 jobs:
@@ -49,14 +51,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-
-      - name: Wait for Lambda to be ready
-        run: |
-          echo "⏳ Esperando que Lambda esté libre..."
-          aws lambda wait function-updated \
-            --function-name AlexaProfesorUniversal \
-            --region us-east-1
-          echo "✅ Lambda lista para deploy"
 
       - name: Deploy to Lambda
         run: |

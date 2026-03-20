@@ -100,10 +100,8 @@ async function ejecutarRutaMatematica(pregunta, keyword, startTime = Date.now())
   // FASE 2: Claude + Wolfram SBS EN PARALELO
   // Claude arranca con el texto de fase1 — no necesita esperar los pasos
   // Wolfram SBS busca los pasos para el botón APL
-  // Claude y SBS corren en paralelo con budgets independientes
-  // SBS tiene hasta 4500ms — suficiente para que Wolfram expanda los pasos
   const claudeBudget = Math.max(2000, 7600 - elapsedFase1 - 200);
-  const sbsBudget    = Math.min(4500, Math.max(2500, 7600 - elapsedFase1 - 500));
+  const sbsBudget    = Math.max(1500, 7600 - elapsedFase1 - claudeBudget - 100);
 
   const claudePromise = consultarClaude(
     pregunta, textoResultado, '', '', keyword, [],
@@ -112,7 +110,7 @@ async function ejecutarRutaMatematica(pregunta, keyword, startTime = Date.now())
 
   // Solo lanzar SBS si Wolfram detectó podstate en fase1
   const sbsPromise = wolframFase1.canStepByStep
-    ? consultarWolfram(keyword, null, { isStepByStep: true, timeoutMs: sbsBudget })
+    ? consultarWolfram(keyword, null, { isStepByStep: true, timeoutMs: sbsBudget + FASE1_TIMEOUT })
     : Promise.resolve(null);
 
   const [claudeResponse, wolframSBS] = await Promise.all([claudePromise, sbsPromise]);

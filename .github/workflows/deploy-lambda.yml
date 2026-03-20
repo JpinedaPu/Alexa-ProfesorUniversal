@@ -5,12 +5,12 @@
 
 name: Deploy to AWS Lambda
 
-# DESHABILITADO: El deploy a Lambda se hace SOLO desde el repo privado
-# (Alexa-ProfesorUniversal-private) que incluye los archivos del modo secreto.
-# Este workflow en el repo público NO debe deployar porque excluye archivos
-# que index.js requiere, causando Runtime.ImportModuleError en Lambda.
 on:
-  workflow_dispatch: # Solo manual, nunca automático
+  push:
+    branches:
+      - main
+    paths:
+      - 'lambda/**'
 
 jobs:
   deploy:
@@ -46,14 +46,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-
-      - name: Wait for Lambda to be ready
-        run: |
-          echo "⏳ Esperando que Lambda esté libre..."
-          aws lambda wait function-updated \
-            --function-name AlexaProfesorUniversal \
-            --region us-east-1
-          echo "✅ Lambda lista para deploy"
 
       - name: Deploy to Lambda
         run: |

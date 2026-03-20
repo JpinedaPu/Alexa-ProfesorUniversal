@@ -569,20 +569,14 @@
         {
           "name": "SecretRouteIntent",
           "samples": [
-            "la palabra es Boaz",
-            "pronuncio la palabra Boaz",
-            "digo la palabra sagrada Boaz",
-            "mi palabra es Boaz",
-            "abre el templo del conocimiento",
-            "activa el templo del conocimiento",
-            "quiero entrar al templo",
-            "las siete artes liberales",
+            "activa modo secreto",
+            "modo secreto",
+            "artes liberales",
+            "las siete artes",
             "trivium y quadrivium",
             "enseñanzas masónicas",
             "templo del conocimiento",
-            "activa el modo de las artes liberales",
-            "quiero las artes liberales",
-            "modo artes liberales"
+            "maestro masón"
           ]
         },
         {
@@ -590,23 +584,20 @@
           "slots": [
             {
               "name": "arte",
-              "type": "ARTE_LIBERAL"
+              "type": "AMAZON.SearchQuery"
+            },
+            {
+              "name": "pregunta",
+              "type": "AMAZON.SearchQuery"
             }
           ],
           "samples": [
-            "maestro de {arte}",
-            "habla con el maestro de {arte}",
-            "consulta al maestro de {arte}",
-            "encuéntrame con el maestro de {arte}",
-            "qué enseña el maestro de {arte}",
-            "enseñanzas de {arte}",
-            "el arte de {arte}",
-            "cuéntame sobre {arte}",
-            "explica {arte}",
-            "qué es {arte}",
-            "consulta al gran maestro",
-            "habla con el gran maestro",
-            "qué dice el gran maestro"
+            "pregunta sobre {arte} {pregunta}",
+            "consulta de {arte} {pregunta}",
+            "{arte} {pregunta}",
+            "maestro de {arte} {pregunta}",
+            "enséñame {arte} {pregunta}",
+            "explícame {arte} {pregunta}"
           ]
         }
       ],
@@ -683,28 +674,28 @@
             {
               "name": {
                 "value": "susurro",
-                "synonyms": ["bajito","bajo","suave","silencioso","silenciosa","whisper"]
+                "synonyms": [
+                  "bajito",
+                  "bajo",
+                  "suave",
+                  "silencioso",
+                  "silenciosa",
+                  "whisper"
+                ]
               }
             },
             {
               "name": {
                 "value": "normal",
-                "synonyms": ["regular","estándar","alto","fuerte","natural"]
+                "synonyms": [
+                  "regular",
+                  "estándar",
+                  "alto",
+                  "fuerte",
+                  "natural"
+                ]
               }
             }
-          ]
-        },
-        {
-          "name": "ARTE_LIBERAL",
-          "values": [
-            { "name": { "value": "gramatica",  "synonyms": ["gramática","gramático","lenguaje","palabras"] } },
-            { "name": { "value": "retorica",   "synonyms": ["retórica","retórico","discurso","persuasión"] } },
-            { "name": { "value": "logica",     "synonyms": ["lógica","lógico","razonamiento","pensamiento"] } },
-            { "name": { "value": "aritmetica", "synonyms": ["aritmética","números","cálculo","matemáticas"] } },
-            { "name": { "value": "geometria",  "synonyms": ["geometría","formas","figuras","proporciones"] } },
-            { "name": { "value": "musica",     "synonyms": ["música","armonía","sonido","melodía"] } },
-            { "name": { "value": "astronomia", "synonyms": ["astronomía","estrellas","cosmos","universo"] } },
-            { "name": { "value": "maestro",    "synonyms": ["gran maestro","masón","maestro masón","guardián"] } }
           ]
         }
       ]

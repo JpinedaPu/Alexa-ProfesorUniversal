@@ -39,26 +39,11 @@ const SkipToResultIntentHandler = {
         let imagenesNormales = []; // Pods de la primera llamada (Input, Result, Plot, etc.)
         let allSteps = []; // Pasos de la segunda llamada
         let originalQuestion = '';
-        let currentKeyword = sessionAttributes.wolframData?.keyword || sessionAttributes.lastKeyword || '';
         
         if (cachedSession) {
-            // VALIDACIÓN: Verificar que el caché corresponda a la pregunta actual
-            const cachedKeyword = cachedSession.originalQuestion || '';
-            
-            // Si hay una pregunta actual y NO coincide con el caché, ignorar el caché
-            if (currentKeyword && cachedKeyword && cachedKeyword !== currentKeyword) {
-                console.log(`[SKIP-TO-RESULT] ⚠️ Caché obsoleto | Cached: "${cachedKeyword}" | Current: "${currentKeyword}"`);
-                // Usar sessionAttributes en lugar del caché obsoleto
-                if (sessionAttributes.wolframData) {
-                    allSteps = sessionAttributes.wolframData.imagenes || [];
-                    imagenesNormales = sessionAttributes.wolframData.imagenesNormales || [];
-                    originalQuestion = sessionAttributes.wolframData.keyword || '';
-                }
-            } else {
-                allSteps = cachedSession.wolframResponse.allSteps || [];
-                imagenesNormales = cachedSession.wolframResponse.imagenesNormales || [];
-                originalQuestion = cachedSession.originalQuestion;
-            }
+            allSteps = cachedSession.wolframResponse.allSteps || [];
+            imagenesNormales = cachedSession.wolframResponse.imagenesNormales || [];
+            originalQuestion = cachedSession.originalQuestion;
         } else if (sessionAttributes.wolframData) {
             allSteps = sessionAttributes.wolframData.imagenes || [];
             imagenesNormales = sessionAttributes.wolframData.imagenesNormales || [];

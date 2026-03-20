@@ -5,24 +5,7 @@
     "sessionId": "amzn1.echo-api.session.test-chain-01",
     "application": { "applicationId": "amzn1.ask.skill.test" },
     "user": { "userId": "amzn1.ask.account.test-chain-user" },
-    "attributes": {
-      "memory": {},
-      "history": [
-        { "role": "user", "content": "quien es el presidente de estados unidos" },
-        { "role": "assistant", "content": "Donald Trump es el presidente actual de Estados Unidos desde el 20 de enero de 2025." },
-        { "role": "user", "content": "el de mexico" },
-        { "role": "assistant", "content": "La presidenta de Mexico es Claudia Sheinbaum." }
-      ],
-      "lastQuestion": "el de mexico",
-      "lastSubject": "Claudia Sheinbaum",
-      "lastKeyword": "President of Mexico",
-      "whisperMode": false,
-      "darkMode": false,
-      "zoomLevel": 85,
-      "pendingLocationRequest": null,
-      "lastFuenteWolfram": true,
-      "lastFuenteWikipedia": true
-    }
+    "attributes": "__INJECT_FROM_PREVIOUS__"
   },
   "context": {
     "System": {
@@ -41,7 +24,7 @@
     "intent": {
       "name": "AskProfeIntent",
       "confirmationStatus": "NONE",
-      "slots": { "question": { "name": "question", "value": "cuantos anos tiene", "confirmationStatus": "NONE" } }
+      "slots": { "question": { "name": "question", "value": "cuantos años tiene", "confirmationStatus": "NONE" } }
     }
   }
 }
