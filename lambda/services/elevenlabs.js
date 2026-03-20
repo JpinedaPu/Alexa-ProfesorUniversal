@@ -73,7 +73,7 @@ async function generarAudioPremium(texto, arte = 'gramatica') {
       CacheControl: 'max-age=86400'
     }));
 
-    const url = `https://${BUCKET}.s3.amazonaws.com/${key}`;
+    const url = `https://${BUCKET}.s3.us-east-1.amazonaws.com/${key}`;
     console.log(`[ELEVENLABS] Audio subido: ${url}`);
     return url;
 
