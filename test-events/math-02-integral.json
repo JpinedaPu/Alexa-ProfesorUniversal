@@ -1,11 +1,26 @@
 {
   "version": "1.0",
   "session": {
-    "new": true,
-    "sessionId": "amzn1.echo-api.session.test-math-02",
+    "new": false,
+    "sessionId": "amzn1.echo-api.session.test-math-chain",
     "application": { "applicationId": "amzn1.ask.skill.test" },
     "user": { "userId": "amzn1.ask.account.test-user-math" },
-    "attributes": {}
+    "attributes": {
+      "memory": {},
+      "history": [
+        { "role": "user", "content": "derivada de x al cubo mas dos x" },
+        { "role": "assistant", "content": "La derivada de x al cubo mas dos x es tres x al cuadrado mas dos." }
+      ],
+      "lastQuestion": "derivada de x al cubo mas dos x",
+      "lastSubject": "derivative of x^3 + 2 x",
+      "lastKeyword": "derivative of x^3 + 2 x",
+      "whisperMode": false,
+      "darkMode": false,
+      "zoomLevel": 85,
+      "pendingLocationRequest": null,
+      "lastFuenteWolfram": true,
+      "lastFuenteWikipedia": false
+    }
   },
   "context": {
     "System": {
@@ -18,15 +33,13 @@
   },
   "request": {
     "type": "IntentRequest",
-    "requestId": "amzn1.echo-api.request.test-math-02",
-    "timestamp": "2026-03-19T00:00:00Z",
+    "requestId": "amzn1.echo-api.request.math-02-chain",
+    "timestamp": "2026-03-20T00:00:01Z",
     "locale": "es-ES",
     "intent": {
       "name": "AskProfeIntent",
       "confirmationStatus": "NONE",
-      "slots": {
-        "question": { "name": "question", "value": "integral de dos x mas cinco", "confirmationStatus": "NONE" }
-      }
+      "slots": { "question": { "name": "question", "value": "integral de dos x mas cinco", "confirmationStatus": "NONE" } }
     }
   }
 }

@@ -60,6 +60,13 @@ tests/response-*.json
 tests/out-*.json
 scripts/response_*.json
 scripts/bedrock-*-response.json
+test-events/results/*.txt
+test-events/results/*.json
+
+# Test files temporales
+wolfram_test*.json
+response-secret-*.json
+test-secret-*.json
 
 # OS
 .DS_Store

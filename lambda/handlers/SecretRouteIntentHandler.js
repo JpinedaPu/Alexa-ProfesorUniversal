@@ -32,14 +32,8 @@ const SecretModeIntentHandler = {
         sessionAttributes.arteActual = 'maestro'; // Comienza con el Maestro Masón
         handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
         
-        const speech = 'Bienvenido, hermano, al templo del conocimiento sagrado. ' +
-                      'Soy el Maestro Masón, guardián de las Siete Artes Liberales. ' +
-                      'El Trivium te enseñará el arte de la palabra: Gramática para estructurar, ' +
-                      'Retórica para persuadir, y Lógica para razonar. ' +
-                      'El Quadrivium te revelará los misterios del universo: ' +
-                      'Aritmética de los números sagrados, Geometría de las proporciones divinas, ' +
-                      'Música de la armonía celestial, y Astronomía del cosmos infinito. ' +
-                      '¿Qué arte deseas explorar en tu camino hacia la luz?';
+        const speech = 'Bienvenido, hermano. Has entrado al templo. Soy el Maestro Masón. ' +
+                      '¿Qué arte deseas explorar: Gramática, Retórica, Lógica, Aritmética, Geometría, Música o Astronomía?';
         
         try {
             // Generar audio premium con voz del Maestro Masón (timeout más largo para primera llamada)

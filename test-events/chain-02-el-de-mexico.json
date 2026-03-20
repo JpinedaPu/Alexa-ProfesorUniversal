@@ -5,7 +5,23 @@
     "sessionId": "amzn1.echo-api.session.test-chain-01",
     "application": { "applicationId": "amzn1.ask.skill.test" },
     "user": { "userId": "amzn1.ask.account.test-chain-user" },
-    "attributes": "__INJECT_FROM_PREVIOUS__"
+    "attributes": {
+      "memory": {},
+      "history": [
+        { "role": "user", "content": "quien es el presidente de estados unidos" },
+        { "role": "assistant", "content": "Donald Trump es el presidente actual de Estados Unidos desde el 20 de enero de 2025." }
+      ],
+      "lastQuestion": "quien es el presidente de estados unidos",
+      "lastSubject": "Donald Trump",
+      "lastKeyword": "President of United States",
+      "whisperMode": false,
+      "darkMode": false,
+      "zoomLevel": 85,
+      "pendingLocationRequest": null,
+      "imagenesExtraOffset": 6,
+      "lastFuenteWolfram": true,
+      "lastFuenteWikipedia": true
+    }
   },
   "context": {
     "System": {
