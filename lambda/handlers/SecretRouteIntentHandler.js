@@ -72,6 +72,7 @@ const SecretModeIntentHandler = {
                 .reprompt('¿Qué arte liberal deseas estudiar, hermano?')
                 .getResponse();
 
+            console.log(`[MODO-SECRETO] Response completo: ${JSON.stringify(response)}`);
             console.log(`[MODO-SECRETO] Response outputSpeech: ${JSON.stringify(response.response?.outputSpeech)}`);
             console.log(`[MODO-SECRETO] shouldEndSession: ${response.response?.shouldEndSession}`);
             return response;
