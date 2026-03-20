@@ -1,62 +1,19 @@
-# NOTA: alexa-hosted-version/ existe solo localmente, no se sube al repo.
-# Este workflow aplica a lambda/ (version AWS Lambda produccion).
-# Skill ID: amzn1.ask.skill.91893f76-ab13-4ee2-ad95-d803f3434ee5
-# Lambda: arn:aws:lambda:us-east-1:811710375370:function:AlexaProfesorUniversal
+# REPO PÚBLICO — Este workflow NO deploya a Lambda.
+# El deploy a Lambda se hace SOLO desde Alexa-ProfesorUniversal-private
+# que incluye los archivos del modo secreto requeridos por index.js.
+# Deployar desde este repo causa Runtime.ImportModuleError en Lambda.
 
 name: Deploy to AWS Lambda
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'lambda/**'
+  workflow_dispatch: # Solo manual, nunca automático
 
 jobs:
-  deploy:
+  aviso:
     name: Deploy Lambda Code
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        working-directory: lambda
-        run: npm install --omit=dev
-
-      - name: Zip Lambda package
+      - name: Deploy deshabilitado en repo publico
         run: |
-          cd lambda
-          zip -r ../lambda_deploy.zip . \
-            -x "*.git*" \
-            -x "handlers/SecretRouteIntentHandler.js" \
-            -x "handlers/artesLiberalesRoutes.js" \
-            -x "services/elevenlabs.js" \
-            -x "tests/*"
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Deploy to Lambda
-        run: |
-          aws lambda update-function-code \
-            --function-name AlexaProfesorUniversal \
-            --zip-file fileb://lambda_deploy.zip \
-            --region us-east-1
-
-      - name: Wait for update to complete
-        run: |
-          aws lambda wait function-updated \
-            --function-name AlexaProfesorUniversal \
-            --region us-east-1
-          echo "✅ Lambda actualizada exitosamente!"
+          echo "⛔ El deploy a Lambda se hace SOLO desde el repo privado."
+          echo "Este workflow existe solo como referencia de la configuración."
