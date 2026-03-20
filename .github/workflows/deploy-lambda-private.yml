@@ -1,4 +1,4 @@
-name: Deploy to AWS Lambda (Full)
+name: Deploy to AWS Lambda
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy Lambda Code (Full)
+    name: Deploy Lambda Code
     runs-on: ubuntu-latest
 
     steps:
@@ -26,22 +26,15 @@ jobs:
 
       - name: Verify secret files present
         run: |
-          MISSING=""
           for f in lambda/handlers/SecretRouteIntentHandler.js lambda/handlers/artesLiberalesRoutes.js lambda/services/elevenlabs.js; do
-            if [ ! -f "$f" ]; then MISSING="$MISSING $f"; fi
+            if [ ! -f "$f" ]; then echo "❌ Falta: $f" && exit 1; fi
           done
-          if [ -n "$MISSING" ]; then
-            echo "❌ DEPLOY ABORTADO — Archivos secretos ausentes:$MISSING"
-            exit 1
-          fi
           echo "✅ Archivos secretos presentes"
 
       - name: Zip Lambda package
         run: |
           cd lambda
-          zip -r ../lambda_deploy.zip . \
-            -x "*.git*" \
-            -x "tests/*"
+          zip -r ../lambda_deploy.zip . -x "*.git*" -x "tests/*"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -50,6 +43,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: Wait for Lambda to be ready
+        run: aws lambda wait function-updated --function-name AlexaProfesorUniversal --region us-east-1
+
       - name: Deploy to Lambda
         run: |
           aws lambda update-function-code \
@@ -57,9 +53,7 @@ jobs:
             --zip-file fileb://lambda_deploy.zip \
             --region us-east-1
 
-      - name: Wait for update to complete
+      - name: Wait for deploy to complete
         run: |
-          aws lambda wait function-updated \
-            --function-name AlexaProfesorUniversal \
-            --region us-east-1
-          echo "✅ Lambda actualizada con modo secreto incluido!"
+          aws lambda wait function-updated --function-name AlexaProfesorUniversal --region us-east-1
+          echo "✅ Lambda actualizada"
