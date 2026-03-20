@@ -12,20 +12,21 @@ const s3 = new S3Client({ region: 'us-east-1' });
 const BUCKET = 'alexa-profesor-universal-cache-us-east-1';
 
 // Voces especializadas por arte liberal + Maestro Masón
+// Solo voces gratuitas disponibles en ElevenLabs Free Tier
 const VOCES_ARTES = {
   // Trivium (Artes del Lenguaje)
-  gramatica: '21m00Tcm4TlvDq8ikWAM',  // Rachel - clara, profesional, estructura del lenguaje
-  retorica: 'pNInz6obpgDQGcFmaJgB',   // Adam - narrativo, persuasivo, arte de convencer
-  logica: 'ErXwobaYiN019PkySvjV',     // Antoni - analítico, preciso, razonamiento puro
+  gramatica: 'ErXwobaYiN019PkySvjV',  // Antoni - analítico, preciso (fallback de Rachel)
+  retorica: 'pNInz6obpgDQGcFmaJgB',   // Adam - narrativo, persuasivo ✅
+  logica: 'ErXwobaYiN019PkySvjV',     // Antoni - analítico, preciso ✅
   
   // Quadrivium (Artes Matemáticas)
-  aritmetica: 'VR6AewLTigWG4xSOukaG', // Arnold - metódico, estructurado, números sagrados
-  geometria: 'EXAVITQu4vr4xnSDxMaL',  // Bella - visual, descriptiva, proporciones divinas
-  musica: 'MF3mGyEYCl7XYWbV9V6O',     // Elli - armoniosa, melódica, armonía universal
-  astronomia: 'TxGEqnHWrfWFTfGW9XjX', // Josh - contemplativo, profundo, cosmos y tiempo
+  aritmetica: 'VR6AewLTigWG4xSOukaG', // Arnold - metódico, estructurado ✅
+  geometria: 'EXAVITQu4vr4xnSDxMaL',  // Bella - visual, descriptiva ✅
+  musica: 'EXAVITQu4vr4xnSDxMaL',     // Bella - armoniosa (fallback de Elli)
+  astronomia: 'pNInz6obpgDQGcFmaJgB', // Adam - contemplativo (fallback de Josh)
   
   // Maestro Masón (Síntesis de todas las artes)
-  maestro: 'onwK4e9ZLuTAKqWW03F9'     // Daniel - sabio, equilibrado, guía espiritual
+  maestro: 'onwK4e9ZLuTAKqWW03F9'     // Daniel - sabio, equilibrado ✅
 };
 
 /**
