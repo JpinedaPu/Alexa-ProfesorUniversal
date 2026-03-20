@@ -91,11 +91,10 @@ async function reconstruirPreguntaAmbigua(question, contextoRelevante, datoSolic
         preguntaReconstruida = `¿Cuál es el periodo presidencial de ${contextoRelevante}?`;
         preguntaAmbigua = true;
     } else if (contextoRelevante && question.length < 18 && pronombresAmbiguos && pronombresAmbiguos.test(question)) {
-        if (!question.toLowerCase().includes(contextoRelevante.toLowerCase())) {
-            let base = question.replace(/^¿?y\s+/i, "");
-            preguntaReconstruida = `${base} ${contextoRelevante}`;
-            preguntaAmbigua = true;
-        }
+        // NO concatenar contexto: produce keywords incorrectas ("el de méxico Donald Trump")
+        // GPT en obtenerKeyword recibe contextoFactual y resuelve el pronombre correctamente
+        preguntaReconstruida = question;
+        preguntaAmbigua = false;
     }
     
     // Traducir pregunta reconstruida al inglés para Wolfram (solo si cambió)

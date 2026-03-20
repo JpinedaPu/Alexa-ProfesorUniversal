@@ -478,7 +478,7 @@ function generarAPL(isDark) {
                                 width: "100%",
                                 data: "${templateData.imagenesExtra || []}",
                                 numbered: false,
-                                display: "${templateData.soloImagenes && templateData.imagenesExtra && templateData.imagenesExtra.length > 0 ? 'normal' : 'none'}",
+                                when: "${templateData.soloImagenes && templateData.imagenesExtra && templateData.imagenesExtra.length > 0}",
                                 items: [
                                     {
                                         type: "Container",

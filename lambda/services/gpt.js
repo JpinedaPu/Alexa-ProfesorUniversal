@@ -225,6 +225,7 @@ async function obtenerKeyword(pregunta, historial = [], contextoFactual = null, 
             systemPrompt = `Extract the BEST search keyword for Wolfram Alpha or Wikipedia. Max 6 words, in English.
 RULES:
 - A PRONOUN or SUBJECT change occurred. RESOLVE it using the CONTEXT: ${contextoStr}.${rolContext}
+- CRITICAL: If the question says "el de [country/place]" or "la de [country/place]", it means the EQUIVALENT ROLE in that country, NOT the previous person in that country. Example: context="Donald Trump", question="el de México" → "President of Mexico" (NOT "Donald Trump Mexico").
 - MANDATORY: Result in ENGLISH ONLY.
 - COMPARISON: If comparison implied, return BOTH entities separated by 'vs' (e.g. 'Sun vs Earth').
 - DURATION/SUN: If asking about sun duration in a location, return 'Sun in [City]'.
