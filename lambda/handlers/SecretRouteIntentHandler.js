@@ -36,11 +36,17 @@ const SecretModeIntentHandler = {
                       '¿Qué arte deseas explorar: Gramática, Retórica, Lógica, Aritmética, Geometría, Música o Astronomía?';
         
         try {
-            // Generar audio premium con voz del Maestro Masón (timeout más largo para primera llamada)
+            console.log('[MODO-SECRETO] Iniciando generación de audio premium');
             const audioUrl = await generarAudioPremium(speech, 'maestro');
-            
-            // APL con símbolos masónicos
+            console.log(`[MODO-SECRETO] Audio URL: ${audioUrl}`);
+
+            const ssml = `<speak><audio src="${audioUrl}"/></speak>`;
+            console.log(`[MODO-SECRETO] SSML a enviar: ${ssml}`);
+
+            // Verificar soporte APL
             const supportedInterfaces = Alexa.getSupportedInterfaces(handlerInput.requestEnvelope);
+            console.log(`[MODO-SECRETO] Interfaces soportadas: ${JSON.stringify(Object.keys(supportedInterfaces || {}))}`);
+
             if (supportedInterfaces['Alexa.Presentation.APL']) {
                 handlerInput.responseBuilder.addDirective({
                     type: "Alexa.Presentation.APL.RenderDocument",
@@ -48,9 +54,9 @@ const SecretModeIntentHandler = {
                     document: generarAPL(sessionAttributes.darkMode),
                     datasources: {
                         templateData: {
-                            titulo: "⚒️ Las 7 Artes Liberales ⚒️",
-                            textoSuperior: "Trivium: Gramática • Retórica • Lógica",
-                            textoInferior: "Quadrivium: Aritmética • Geometría • Música • Astronomía",
+                            titulo: "Las 7 Artes Liberales",
+                            textoSuperior: "Trivium: Gramática · Retórica · Lógica",
+                            textoInferior: "Quadrivium: Aritmética · Geometría · Música · Astronomía",
                             imagenes: [],
                             fuenteWolfram: false,
                             fuenteWikipedia: false,
@@ -60,15 +66,18 @@ const SecretModeIntentHandler = {
                     }
                 });
             }
-            
-            return handlerInput.responseBuilder
-                .speak(`<audio src="${audioUrl}"/>`)
-                .reprompt('¿Qué arte liberal deseas estudiar, hermano?')
+
+            const response = handlerInput.responseBuilder
+                .speak(ssml)
+                .reprompt('<speak>¿Qué arte liberal deseas estudiar, hermano?</speak>')
                 .getResponse();
-                
+
+            console.log(`[MODO-SECRETO] Response outputSpeech: ${JSON.stringify(response.response?.outputSpeech)}`);
+            console.log(`[MODO-SECRETO] shouldEndSession: ${response.response?.shouldEndSession}`);
+            return response;
+
         } catch (error) {
-            console.error('[MODO-SECRETO] Error generando audio:', error);
-            // Fallback a voz normal de Alexa
+            console.error('[MODO-SECRETO] Error generando audio:', error.message, error.stack);
             return handlerInput.responseBuilder
                 .speak(speech)
                 .reprompt('¿Qué arte liberal deseas estudiar?')
