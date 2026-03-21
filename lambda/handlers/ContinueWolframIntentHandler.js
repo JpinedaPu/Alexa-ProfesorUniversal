@@ -34,8 +34,10 @@ const ContinueWolframIntentHandler = {
         return false;
     },
     handle(handlerInput) {
-        console.log("[SKILL] ⏩ Capturado intento de continuación para Wolfram");
-        // Delegar de vuelta al manejador principal con flag de continuar
+        const sa = handlerInput.attributesManager.getSessionAttributes();
+        const step = sa.currentWolframStep || 0;
+        const total = sa.wolframData?.imagenes?.length || 0;
+        console.log(`[CONTINUE-WOLFRAM] step=${step}/${total}`);
         return WolframAlphaModeIntentHandler.handle(handlerInput, 'CONTINUE_WOLFRAM_MODE');
     }
 };

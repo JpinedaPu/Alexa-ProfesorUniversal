@@ -110,6 +110,7 @@ async function obtenerKeyword(pregunta, historial = [], contextoFactual = null, 
             .toLowerCase()
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[¿?]/g, '')  // Eliminar signos de interrogación
             .trim();
 
         // ── FAST PATHS ────────────────────────────────────────────────────────
@@ -137,61 +138,135 @@ async function obtenerKeyword(pregunta, historial = [], contextoFactual = null, 
         }
 
         // Fast path: derivadas/integrales/límites
-        const mathMatch = preguntaNorm.match(/\b(derivada|integral|limite)\s+de\s+(.+?)(?:\s+paso|$)/i);
-        if (mathMatch) {
-            const op = mathMatch[1];
-            const expr = mathMatch[2].trim()
-                // Limpiar palabras en español no matemáticas
+        // Reparar mojibake en la pregunta completa antes del regex
+        const preguntaClean = pregunta
+            .replace(/Ã¡/g, 'á').replace(/Ã©/g, 'é').replace(/Ã­/g, 'í')
+            .replace(/Ã³/g, 'ó').replace(/Ãº/g, 'ú').replace(/Ã±/g, 'ñ')
+            .replace(/Ã/g, 'Á').replace(/Ã/g, 'É').replace(/Ã/g, 'Í')
+            .replace(/Ã/g, 'Ó').replace(/Ã/g, 'Ú').replace(/Â¿/g, '¿');
+        const mathMatchOriginal = preguntaClean.toLowerCase().match(/\b(derivada|integral|limite)\s+de(?:l)?\s+(.+?)(?:\s+paso|$)/i);
+        if (mathMatchOriginal) {
+            const op = mathMatchOriginal[1];
+            let expr = mathMatchOriginal[2].trim()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '') // quitar diacríticos después de reparar mojibake
+                .replace(/[¿?¡!]/g, '');         // eliminar signos de puntuación residuales
+            // PASO 1: e^(nx) — ANTES de convertir operadores para no romper la expresión
+            // Capturar "e a la [expr]" ANTES de que "por" se convierta a "*"
+            expr = expr
+                .replace(/\be\s+a\s+la\s+menos\s+(\w+)/g, 'e^(-$1)')
+                .replace(/\be\s+a\s+la\s+(\w+)/g, 'e^($1)');
+            // PASO 2: funciones inversas — ANTES que las directas
+            expr = expr
+                .replace(/\b(?:arco\s*seno|arc\s*seno|arcoseno)\s*(?:de\s+)?/g, 'arcsin(')
+                .replace(/\b(?:arco\s*coseno|arc\s*coseno)\s*(?:de\s+)?/g, 'arccos(')
+                .replace(/\b(?:arco\s*tangente|arc\s*tangente)\s*(?:de\s+)?/g, 'arctan(');
+            // PASO 3: funciones al cuadrado — marcar con __sq__ para resolver después
+            expr = expr
+                .replace(/\b(?:el\s+|la\s+)?seno\s+al\s+cuadrado\s*(?:de\s+)?/g, '__sinSQ__(')
+                .replace(/\b(?:el\s+|la\s+)?coseno\s+al\s+cuadrado\s*(?:de\s+)?/g, '__cosSQ__(')
+                .replace(/\b(?:el\s+|la\s+)?tangente\s+al\s+cuadrado\s*(?:de\s+)?/g, '__tanSQ__(');
+            // PASO 4: funciones simples — marcar con __fn__ para cerrar paren después del argumento
+            // NO abrir paréntesis aquí — se cierra en PASO 4b tras convertir variables/números
+            expr = expr
+                .replace(/\b(?:el\s+|la\s+)?seno\s*(?:de\s+)?/g, '__sin__')
+                .replace(/\b(?:el\s+|la\s+)?coseno\s*(?:de\s+)?/g, '__cos__')
+                .replace(/\b(?:el\s+|la\s+)?tangente\s*(?:de\s+)?/g, '__tan__');
+            // PASO 5: raíz cuadrada y logaritmos — apertura directa, PASO 12 cierra
+            // (a diferencia de sin/cos/tan, sqrt/ln/log suelen tener argumentos compuestos
+            // como sqrt(x+1) o ln(x^2+1) que el sistema de marcadores no captura bien)
+            expr = expr
+                .replace(/\b(?:la\s+)?raiz\s+cuadrada\s+de(?:l)?\s*/g, 'sqrt(')
+                .replace(/\braiz\s+de(?:l)?\s*/g, 'sqrt(')
+                .replace(/\blogaritmo\s+natural\s+de(?:l)?\s*/g, 'ln(')
+                .replace(/\blog\s+natural\s+de(?:l)?\s*/g, 'ln(')
+                .replace(/\bln\s+de(?:l)?\s*/g, 'ln(')
+                .replace(/\blogaritmo\s+de(?:l)?\s*/g, 'log(')
+                .replace(/\blogaritmo\b/g, 'log(');
+            // PASO 6: limpiar palabras no matemáticas
+            expr = expr
                 .replace(/\bla\s+funci[oó]n\b/gi, '')
                 .replace(/\bla\s+expresi[oó]n\b/gi, '')
                 .replace(/\bde\s+la\b/gi, '')
-                // Variables fonéticas
-                .replace(/\bequis\b/g, 'x')
+                .replace(/\b(el|la)\s+(sin|cos|tan|log|ln|sqrt|arcsin|arccos|arctan)\(/g, '$2(');
+            // PASO 7: variables fonéticas y palabras en español residuales
+            expr = expr
+                .replace(/equis/g, 'x')   // sin \b — equis puede estar pegado a marcadores __fn__
                 .replace(/\bigriega\b/g, 'y')
                 .replace(/\bzeta\b/g, 'z')
-                // Números cardinales en español → dígitos (ANTES de operadores para evitar "dos x" → "2 x")
-                .replace(/\bcero\b/g, '0')
-                .replace(/\bun[ao]?\b/g, '1')
-                .replace(/\bdos\b/g, '2')
-                .replace(/\btres\b/g, '3')
-                .replace(/\bcuatro\b/g, '4')
-                .replace(/\bcinco\b/g, '5')
-                .replace(/\bseis\b/g, '6')
-                .replace(/\bsiete\b/g, '7')
-                .replace(/\bocho\b/g, '8')
-                .replace(/\bnueve\b/g, '9')
-                .replace(/\bdiez\b/g, '10')
-                .replace(/\bonce\b/g, '11')
-                .replace(/\bdoce\b/g, '12')
-                .replace(/\bveinte\b/g, '20')
-                .replace(/\bcien\b/g, '100')
-                .replace(/\bpi\b/g, 'pi')
-                // Potencias
+                .replace(/\bmas\b/g, '+')  // "más" sin acento después de normalizar
+                .replace(/\bal\b/g, '')    // "al" residual (de "x al cuadrado" cuando cuadrado se procesa antes)
+                .replace(/\bla\b/g, '')
+                .replace(/\bel\b/g, '')
+                .replace(/\bde\b/g, '');
+            // PASO 8: números (sin \b — pueden estar pegados a marcadores __fn__)
+            expr = expr
+                .replace(/cero/g, '0').replace(/un[ao]?(?![a-z])/g, '1')
+                .replace(/dos/g, '2').replace(/tres/g, '3')
+                .replace(/cuatro/g, '4').replace(/cinco/g, '5')
+                .replace(/seis/g, '6').replace(/siete/g, '7')
+                .replace(/ocho/g, '8').replace(/nueve/g, '9')
+                .replace(/\bdiez\b/g, '10').replace(/\bonce\b/g, '11')
+                .replace(/\bdoce\b/g, '12').replace(/\bveinte\b/g, '20')
+                .replace(/\bcien\b/g, '100').replace(/\bpi\b/g, 'pi');
+            // PASO 9: potencias
+            expr = expr
+                .replace(/\bx\s+cuadrado\b/g, 'x^2')
+                .replace(/\bx\s+cubo\b/g, 'x^3')
+                .replace(/\b(\w+)\s+cuadrado\b/g, '$1^2')
+                .replace(/\b(\w+)\s+cubo\b/g, '$1^3')
                 .replace(/\bx\s+al\s+cubo\b/g, 'x^3')
                 .replace(/\bx\s+al\s+cuadrado\b/g, 'x^2')
                 .replace(/\b(\w+)\s+al\s+cubo\b/g, '$1^3')
                 .replace(/\b(\w+)\s+al\s+cuadrado\b/g, '$1^2')
-                .replace(/\b(\w+)\s+a\s+la\s+(\d+)\b/g, '$1^$2')
-                // Operadores — "sobre" ANTES que "entre" para no colisionar
+                .replace(/\b(\w+)\s+a\s+la\s+(\d+)\b/g, '$1^$2');
+            // PASO 10: operadores
+            expr = expr
                 .replace(/\bsobre\b/g, '/')
+                .replace(/\bdividido\s+entre\b/g, '/').replace(/\bdividido\s+por\b/g, '/')
                 .replace(/\bm[aá]s\b/g, '+').replace(/\bmenos\b/g, '-')
-                .replace(/\bpor\b/g, '*').replace(/\bentre\b/g, '/')
-                // Funciones — logaritmo natural ANTES que logaritmo genérico
-                .replace(/\blogaritmo\s+natural\s+de\b/g, 'ln(')
-                .replace(/\blog\s+natural\s+de\b/g, 'ln(')
-                .replace(/\bln\s+de\b/g, 'ln(')
-                .replace(/\braiz\s+de\b/g, 'sqrt(')
-                .replace(/\bseno\b/g, 'sin').replace(/\bcoseno\b/g, 'cos').replace(/\btangente\b/g, 'tan')
-                .replace(/\blogaritmo\b/g, 'log')
-                // Límites
+                .replace(/\bpor\b/g, '*').replace(/\bentre\b/g, '/');
+            // PASO 10b: colapsar e^(N) * x → e^(N*x) DESPUÉS de convertir "por" → "*"
+            // Solo colapsar si el siguiente token es una variable sola (x,y,z), no una función
+            expr = expr.replace(/e\^\((-?[\w.]+)\)\s*\*?\s*([xyz])(?![a-z(])/g, 'e^($1*$2)');
+            // PASO 10c: resolver marcadores __sin__/__cos__/__tan__ de adentro hacia afuera
+            // (__sqrt__/__ln__/__log__ ya fueron resueltos con apertura directa en PASO 5)
+            const fnArgSimple = '([+-]?\\s*\\d*\\.?\\d*\\s*\\*?\\s*[a-z](?:\\^[\\w.]+)?|[+-]?\\s*\\d+(?:\\.\\d+)?(?:\\^[\\w.]+)?)';
+            for (let pass = 0; pass < 3; pass++) {
+                expr = expr
+                    .replace(new RegExp('__sin__\\s*' + fnArgSimple, 'g'), 'sin($1)')
+                    .replace(new RegExp('__cos__\\s*' + fnArgSimple, 'g'), 'cos($1)')
+                    .replace(new RegExp('__tan__\\s*' + fnArgSimple, 'g'), 'tan($1)');
+                // Resolver cuando el argumento es una función ya resuelta: ln(sin(x))
+                expr = expr
+                    .replace(/__sin__\s*((?:sin|cos|tan|sqrt|ln|log|arcsin|arccos|arctan)\([^)]+\)(?:\^[\w.]+)?)/g, 'sin($1)')
+                    .replace(/__cos__\s*((?:sin|cos|tan|sqrt|ln|log|arcsin|arccos|arctan)\([^)]+\)(?:\^[\w.]+)?)/g, 'cos($1)')
+                    .replace(/__tan__\s*((?:sin|cos|tan|sqrt|ln|log|arcsin|arccos|arctan)\([^)]+\)(?:\^[\w.]+)?)/g, 'tan($1)');
+            }
+            // Marcadores sin resolver → abrir paréntesis y cerrar al final (PASO 12)
+            expr = expr
+                .replace(/__sin__/g, 'sin(').replace(/__cos__/g, 'cos(').replace(/__tan__/g, 'tan(');
+            expr = expr.replace(/\s+/g, ' ').trim();
+            // PASO 11: 1/(denominador) — envolver ANTES de cerrar paréntesis y ANTES de convertir límites
+            // \S+ solo capturaba el primer token; esta regex captura todo el denominador hasta la cláusula de límite
+            expr = expr.replace(
+                /^1\s*\/\s*(.+?)(\s+(?:as\s+x|approaches\s+|cuando\s+x).*)?$/,
+                (_, denom, limitClause) => '1/(' + denom.trim() + ')' + (limitClause || '')
+            );
+            // PASO 12 (antes): cerrar paréntesis abiertos
+            const abiertos = (expr.match(/\(/g) || []).length - (expr.match(/\)/g) || []).length;
+            let exprFinal = abiertos > 0 ? expr + ')'.repeat(abiertos) : expr;
+            // PASO 13: resolver marcadores __sq__ → sin(...)^2
+            exprFinal = exprFinal
+                .replace(/__sinSQ__\(([^)]+)\)/g, 'sin($1)^2')
+                .replace(/__cosSQ__\(([^)]+)\)/g, 'cos($1)^2')
+                .replace(/__tanSQ__\(([^)]+)\)/g, 'tan($1)^2');
+            // PASO 14: límites — al final para no ser envueltos por PASO 11
+            exprFinal = exprFinal
                 .replace(/\bcuando\s+x\s+tiende\s+a\s+infinito\b/g, 'as x approaches infinity')
                 .replace(/\bcuando\s+x\s+tiende\s+a\s+(\w+)\b/g, 'as x approaches $1')
                 .replace(/\btiende\s+a\s+infinito\b/g, 'approaches infinity')
-                .replace(/\btiende\s+a\s+(\w+)\b/g, 'approaches $1')
-                .replace(/\s+/g, ' ').trim();
-            // Cerrar paréntesis abiertos por funciones (ln, sqrt, sin, cos, tan, log)
-            const abiertos = (expr.match(/\(/g) || []).length - (expr.match(/\)/g) || []).length;
-            const exprFinal = abiertos > 0 ? expr + ')'.repeat(abiertos) : expr;
+                .replace(/\btiende\s+a\s+(\w+)\b/g, 'approaches $1');
             const keyword = op === 'derivada' ? `derivative of ${exprFinal}`
                 : op === 'integral' ? `integral of ${exprFinal}`
                 : `limit of ${exprFinal}`;
@@ -280,25 +355,55 @@ RULES:
         req.on('timeout', () => {
             req.destroy();
             console.log(`[GPT-KW] ❌ TIMEOUT | T+${Date.now()-startTime}ms`);
-            // Fallback: diccionario de frases comunes
-            const fallbacks = {
-                'presidente de estados unidos': 'president of the United States',
-                'estados unidos': 'United States',
-                'presidente de mexico': 'president of Mexico',
-                'presidente de espana': 'president of Spain',
-                'capital de francia': 'capital of France',
-                'capital de mexico': 'capital of Mexico',
-                'capital de espana': 'capital of Spain'
-            };
-            for (const frase in fallbacks) {
-                if (preguntaNorm.includes(frase)) { resolve(fallbacks[frase]); return; }
-            }
-            resolve(preguntaNorm.replace(/[¿?]/g, '').split(' ').filter(w => w.length > 3).slice(-1)[0] || '');
+            // Fallback: Gemini extrae el keyword
+            _keywordConGemini(pregunta, contextoFactual).then(resolve);
         });
         req.on('error', (e) => {
             console.log(`[GPT-KW] ❌ ERR_NET | T+${Date.now()-startTime}ms | ${e.message}`);
-            resolve(pregunta.split(' ').slice(-2).join(' '));
+            _keywordConGemini(pregunta, contextoFactual).then(resolve);
         });
+        req.write(payload);
+        req.end();
+    });
+}
+
+/**
+ * Fallback: extrae keyword usando Gemini cuando GPT falla o hace timeout.
+ * @param {string} pregunta
+ * @param {string|null} contexto
+ * @returns {Promise<string>}
+ */
+function _keywordConGemini(pregunta, contexto) {
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+    if (!GEMINI_API_KEY) return Promise.resolve(pregunta.split(' ').slice(-2).join(' '));
+
+    const ctx = contexto ? ` Context: "${contexto}".` : '';
+    const prompt = `Extract the best search keyword for Wolfram Alpha or Wikipedia. Max 5 words, in English only. No explanation.${ctx}\nQuestion: ${pregunta}`;
+
+    return new Promise((resolve) => {
+        const payload = JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { maxOutputTokens: 20, temperature: 0 }
+        });
+        const req = https.request({
+            hostname: 'generativelanguage.googleapis.com',
+            path: `/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 2000
+        }, (res) => {
+            let data = '';
+            res.on('data', c => data += c);
+            res.on('end', () => {
+                try {
+                    const kw = JSON.parse(data).candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+                    console.log(`[GPT-KW] 🟡 GEMINI FALLBACK | "${kw}"`);
+                    resolve(kw || pregunta.split(' ').slice(-2).join(' '));
+                } catch { resolve(pregunta.split(' ').slice(-2).join(' ')); }
+            });
+        });
+        req.on('timeout', () => { req.destroy(); resolve(pregunta.split(' ').slice(-2).join(' ')); });
+        req.on('error', () => resolve(pregunta.split(' ').slice(-2).join(' ')));
         req.write(payload);
         req.end();
     });

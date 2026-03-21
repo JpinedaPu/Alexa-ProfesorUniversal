@@ -17,6 +17,9 @@
 module.exports.validateSpeech = (speech) => {
   if (!speech || typeof speech !== 'string') return false;
   
+  // Respuestas solo-audio (Modo Secreto ElevenLabs) son válidas aunque no tengan texto
+  if (/<audio\s+src=/i.test(speech)) return true;
+  
   // Limpiar SSML para validar longitud real del contenido
   const clean = speech.replace(/<[^>]+>/g, '').trim();
   if (clean.length < 2) return false;

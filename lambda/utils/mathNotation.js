@@ -11,6 +11,9 @@
 function normalizarNotacionMatematica(texto) {
   if (!texto) return texto;
   
+  // Si ya viene del fast path (empieza con derivative/integral/limit of), no retransformar
+  if (/^(derivative of|integral of|integrate|limit of)\s/i.test(texto)) return texto;
+
   let normalizado = texto;
 
   // Limpiar palabras en español que no son matemáticas

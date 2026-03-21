@@ -60,7 +60,7 @@ module.exports = {
     
     // Configuración de rendimiento y timeouts
     PERFORMANCE: {
-        GLOBAL_DEADLINE_MS: 7700,            // Deadline global para respuesta de Lambda
+        GLOBAL_DEADLINE_MS: 7800,            // Deadline global para respuesta de Lambda (margen 200ms para red)
         PROGRESSIVE_RESPONSE_DELAY_MS: 2000  // Delay antes de enviar Progressive Response
     }
 };

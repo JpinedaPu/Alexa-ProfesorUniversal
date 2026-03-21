@@ -1,137 +1,150 @@
 # Qué Hace Cada Cosa — Profesor Universal IA
 
----
+## `lambda/handlers/`
 
-## Las 5 IAs + 2 APIs de Imagen
+### `AskProfeIntentHandler.js`
+Handler principal. Recibe toda pregunta del usuario y decide la ruta:
+1. Detecta si es matemática → `mathRoute.js`
+2. Detecta si es científica → `scienceRoute.js`
+3. Si no → flujo normal (Wikipedia + Gemini + Claude)
 
-| Servicio | Archivo | Rol | Cuándo se usa |
-|----------|---------|-----|---------------|
-| **Claude 4.5 Haiku** | `services/claude.js` | Síntesis final — genera el speech y displayTop/Bottom | Siempre, es el "profesor" que habla |
-| **GPT-4.1 Mini** | `services/gpt.js` | Extrae keyword, convierte notación matemática | Inicio de cada request |
-| **Gemini 3.1 Flash-Lite** | `services/gemini.js` | Contexto web actualizado | Preguntas con datos recientes |
-| **Wolfram Alpha** | `services/wolfram.js` | Datos técnicos, gráficas, step-by-step | Matemáticas, física, datos numéricos |
-| **Wikipedia** | `services/wikipedia.js` | Contexto enciclopédico | Preguntas conceptuales/biográficas |
-| **NASA Images API** | `utils/imagenesExtra.js` | Imágenes científicas | Temas espaciales/científicos |
-| **Wikimedia Commons** | `utils/imagenesExtra.js` | Imágenes educativas | Temas generales |
+Maneja: caché S3, historial DynamoDB, APL, whisper mode, zoom, ambigüedad, ubicación.
 
----
+### `mathRoute.js`
+Ruta especializada para derivadas, integrales, límites, ecuaciones.
+- Llama Wolfram fase1 (`isStepByStep:false`) para imágenes + detección de podstates
+- Claude corre **en paralelo** con Wolfram (arranca con pregunta sola, se relanza con texto Wolfram si hay tiempo)
+- Devuelve `stepByStepData` para que el botón APL active SBS sin re-llamar Wolfram
+- APL: título matemático + resultado Wolfram + resumen proceso Claude
 
-## Handlers — Qué Procesa Cada Uno
+### `WolframAlphaModeIntentHandler.js`
+Modo paso a paso. Tres flujos:
+- **hasStepByStepData** (botón APL): usa podstates guardados → llama Wolfram fase2 directamente
+- **hasInjectedData** (flujo antiguo): usa imágenes ya expandidas
+- **nuevo query** (voz): GPT convierte español → Wolfram 2 llamadas → DynamoDB caché
 
-### `AskProfeIntentHandler.js` — El cerebro principal
-Procesa toda pregunta educativa general. Decide si va por ruta ESTÁTICA (conceptual) o DINÁMICA (datos actualizados/cálculos), coordina las IAs en paralelo y construye la respuesta final.
+Paginación: 3 pasos por turno. Claude explica cada página.
 
-**Rutas internas:**
-- `mathRoute.js` — detecta y procesa preguntas matemáticas (ecuaciones, derivadas, integrales)
-- `scienceRoute.js` — detecta y procesa preguntas científicas (física, química, astronomía)
-- Flujo normal — todo lo demás (historia, geografía, biología, etc.)
+### `ContinueWolframIntentHandler.js`
+Intercepta "continúa", "siguiente", "sí" cuando hay SBS activo. Delega a `WolframAlphaModeIntentHandler` con flag `CONTINUE_WOLFRAM_MODE`.
 
-### `WolframAlphaModeIntentHandler.js` — Modo paso a paso
-Activa cuando el usuario dice "modo wolfram" o toca el botón APL. Convierte lenguaje natural a notación matemática (GPT), hace 2 llamadas a Wolfram (pods normales + pasos SBS), pagina de 3 en 3 y cachea en DynamoDB.
+### `SkipToResultIntentHandler.js`
+Salta al resultado final del SBS. Busca pod "Result" en `imagenesNormales` primero, luego en `allSteps`.
 
-### `ContinueWolframIntentHandler.js` — Paginación
-Avanza a los siguientes 3 pasos. Lee de DynamoDB si existe caché, si no usa `sessionAttributes.wolframData`.
+### `scienceRoute.js`
+Ruta para astronomía, física, química, biología. Consultas paralelas: Wolfram + Wikipedia + NASA/Wikimedia.
 
-### `SkipToResultIntentHandler.js` — Saltar al final
-Muestra directamente el último pod (resultado) sin recorrer todos los pasos.
+### `RepeatLastQuestionIntentHandler.js`
+"Repite mi última pregunta" → busca en DynamoDB historial del usuario.
 
-### `RepeatLastQuestionIntentHandler.js` — Repetir
-Recupera la última pregunta del historial DynamoDB del usuario y la re-procesa.
+### `SecretRouteIntentHandler.js` *(privado)*
+Modo Boaz / 7 Artes Liberales. Activa voz ElevenLabs premium.
 
----
-
-## Services — Qué Hace Cada Servicio
-
-### `apl.js` — Generador visual
-Genera el documento APL 1.6 completo. Recibe `isDark` (boolean) y devuelve el JSON del documento. Los datos llegan vía `datasources.templateData`. Soporta:
-- Header con 8 logos (estáticos)
-- Logo dinámico Wolfram sobre primer pod (cuando `fuenteWolfram=true`)
-- Pods de imágenes Wolfram con zoom dinámico
-- Botones step-by-step, continuar, saltar, ver más imágenes
-- Barra de controles: zoom ±, modo oscuro, susurro
-
-### `wolfram.js` — Wolfram Alpha
-Hace 1 o 2 llamadas según el modo:
-- **Normal:** 1 llamada, devuelve pods con imágenes + texto plano
-- **Step-by-step:** 2 llamadas — primera detecta podstate SBS, segunda lo expande
-
-Devuelve: `{ imagenes, imagenesNormales, texto, canStepByStep, stepByStepInputs }`
-
-### `claude.js` — Síntesis educativa
-Recibe: pregunta + texto Wolfram + texto Wikipedia + texto Gemini + keyword + historial
-Devuelve JSON: `{ speech, displayTop, displayBottom, keyword }`
-
-### `gpt.js` — Utilidades rápidas
-- `obtenerKeyword()` — extrae el tema principal de la pregunta
-- `traducirGPT()` — traducciones rápidas
-- Conversión notación matemática en `WolframAlphaModeIntentHandler`
+### `artesLiberalesRoutes.js` *(privado)*
+Lógica de las 7 artes liberales con prompts especializados.
 
 ---
 
-## Utils — Herramientas Compartidas
+## `lambda/services/`
 
-| Archivo | Función |
-|---------|---------|
-| `cache.js` | LRU en memoria, TTL corto, para requests repetidos en la misma sesión |
-| `s3Cache.js` | Caché persistente en S3, TTL 7 días, para preguntas conceptuales |
-| `dynamoCache.js` | Caché step-by-step por sessionId, TTL 24h |
-| `userHistory.js` | Guarda/recupera últimas 5 preguntas por userId en DynamoDB |
-| `imagenesExtra.js` | Busca imágenes en NASA Images API y Wikimedia Commons |
-| `cacheabilityAnalyzer.js` | Decide si una pregunta es cacheable y genera su cacheKey |
-| `timeoutManager.js` | `withTimeout(promise, ms, fallback)` — envuelve cualquier promesa con timeout |
-| `mathNotation.js` | Normaliza expresiones matemáticas en español a notación estándar |
-| `reconstruccionPregunta.js` | Reconstruye preguntas ambiguas usando contexto de sesión |
-| `comparacion.js` | Detecta preguntas comparativas ("compara X con Y") |
-| `fallback.js` | Mensajes de error amigables para el usuario |
-| `validateResponse.js` | Valida que el speech de Claude sea usable |
-| `logger.js` | Logging estructurado con prefijos `[MÓDULO]` |
+### `claude.js`
+Claude Haiku 4.5 vía Bedrock (`us-east-1`). Fallback a API directa si AccessDenied.
+- `max_tokens: 700`, `temperature: 0.3`
+- System prompt: profesor apasionado, JSON con `{speech, displayTop, displayBottom, keyword}`
+- `sanitizeSpeech()` convierte símbolos matemáticos a palabras para Alexa
+
+### `gpt.js`
+Dos funciones:
+- `obtenerKeyword()` — extrae keyword en inglés. **Fast path matemático** (~1ms) para derivadas/integrales/límites. Sistema de marcadores `__fn__` para funciones trigonométricas. Fallback a Gemini si GPT hace timeout.
+- `traducirGPT()` — traducciones rápidas para títulos APL
+
+### `wolfram.js`
+Wolfram Alpha Full Results API v2.
+- Llamada normal: 1 HTTP request, devuelve imágenes + texto + `stepByStepData`
+- Modo SBS: 2 llamadas — fase1 detecta podstates, fase2 expande pasos
+- `timeoutMs` se respeta en ambos modos (BUG 1 corregido)
+- `scantimeout` y `podtimeout` se ajustan dinámicamente al budget
+
+### `gemini.js`
+Gemini 3.1 Flash Lite Preview. Contexto adicional para Claude. Fallback de keywords cuando GPT falla.
+
+### `wikipedia.js`
+Wikipedia REST API. Extrae resumen del artículo principal.
+
+### `elevenlabs.js` *(privado)*
+Genera audio premium. Formato `mp3_22050_32` (compatible Alexa). Sube a S3 `/audio/premium/`.
+
+### `apl.js`
+Genera el documento APL dinámicamente según `darkMode`. Modo oscuro/claro.
+
+### `traduccion.js`
+Traduce títulos de keywords (inglés → español) para el APL.
 
 ---
 
-## Config
+## `lambda/utils/`
 
-### `constants.js`
-- `UI` — `MIN_ZOOM`, `MAX_ZOOM`, `ZOOM_STEP`
-- `INPUT` — `MAX_QUESTION_LENGTH`, `MIN_QUESTION_LENGTH`
-- `PERFORMANCE` — `GLOBAL_DEADLINE_MS` (7700)
+### `cache.js`
+Caché LRU en memoria (100 entradas, TTL 5min). Primera capa antes de S3.
+
+### `s3Cache.js`
+Caché persistente en S3. Guarda respuestas de preguntas conceptuales. URLs de Wolfram no se cachean (expiran en ~1-2h).
+
+### `dynamoCache.js`
+Caché de sesiones SBS en DynamoDB. Guarda todos los pasos para paginación sin re-llamar Wolfram.
+
+### `userHistory.js`
+Historial de preguntas por usuario en DynamoDB. Últimas 5 preguntas, TTL 90 días.
+
+### `timeoutManager.js`
+`withTimeout(promise, ms, fallback)` — wrapper que resuelve con fallback si la promise excede el tiempo.
+
+### `ambiguityDetector.js`
+Detecta preguntas ambiguas ("¿cuánto mide?") y pide aclaración antes de procesar.
+
+### `reconstruccionPregunta.js`
+Reconstruye preguntas con pronombres usando contexto de sesión ("¿y él?" → "¿y Einstein?").
+
+### `imagenesExtra.js`
+Busca imágenes en NASA y Wikimedia Commons. Máximo 6 imágenes guardadas en sesión.
+
+### `mathNotation.js`
+`normalizarNotacionMatematica()` — limpia keywords matemáticos antes de enviar a Wolfram.
+
+### `fallback.js`
+Mensajes de fallback según tipo de error (timeout, red, sin datos).
+
+### `logger.js`
+Logging estructurado con `logStep()`.
+
+### `validateResponse.js`
+`validateSpeech()` — verifica que el speech de Claude no sea un mensaje de error.
+
+### `cacheabilityAnalyzer.js`
+Determina si una pregunta es cacheable (no contextual, no dinámica, no ambigua).
+
+---
+
+## `lambda/config/`
 
 ### `timeouts.js`
-Timeouts centralizados por servicio: `WOLFRAM_TIMEOUT`, `WIKI_TIMEOUT`, `GEMINI_TIMEOUT`, `KEYWORD_EXTRACTION_TIMEOUT`, `IMAGES_EXTRA_TIMEOUT`
+Todos los timeouts centralizados. Ver tabla en `DOCUMENTACION_PROYECTO.md`.
+
+### `constants.js`
+Constantes globales: `PERFORMANCE.GLOBAL_DEADLINE_MS = 7850`, límites de Wolfram, configuración de UI, límites de input.
 
 ---
 
-## `index.js` — Punto de Entrada
-
-Registra todos los handlers y maneja:
-- `LaunchRequest` — bienvenida, inicializa sesión
-- `APLUserEventHandler` — eventos táctiles (zoom, modo oscuro, susurro, botones SBS)
-- `DarkModeIntentHandler` — "modo oscuro / modo claro"
-- `WhisperModeIntentHandler` — "modo susurro"
-- `ZoomIntentHandler` — "acercar / alejar"
-- `VerMasImagenesIntentHandler` — "ver más imágenes"
-- Helpers: `renderAPL()`, `aplDatasource()`, `normalizarModoVisual()`, `normalizarDireccionZoom()`
+## `lambda/index.js`
+Punto de entrada. Registra todos los handlers en orden de prioridad. Maneja eventos APL (zoom, dark mode, StepByStep, verMasImagenes). `NavigateHomeIntentHandler` limpia contexto conversacional.
 
 ---
 
-## Flujo de Sesión (sessionAttributes)
+## `skill-package/`
+Manifiesto Alexa y modelo de interacción `es-ES.json`. `invocationName: "profesor universal"`.
 
-```
-lastQuestion        ← pregunta completa del usuario
-lastKeyword         ← keyword extraído por GPT
-lastSubject         ← tema principal (para contexto en preguntas ambiguas)
-lastDisplayTop      ← texto superior APL
-lastDisplayBottom   ← texto inferior APL
-lastImagenes        ← pods Wolfram actuales (hasta 12)
-lastImagenesPasos   ← pasos SBS (hasta 20) — para botón APL sin re-llamar Wolfram
-lastFuenteWolfram   ← boolean
-lastFuenteWikipedia ← boolean
-wolframData         ← datos completos para paginación SBS
-currentWolframStep  ← índice actual en paginación SBS
-imagenesExtraPool   ← pool completo NASA/Wikimedia (hasta 30)
-imagenesExtraOffset ← índice actual del pool
-darkMode            ← boolean
-whisperMode         ← boolean
-zoomLevel           ← número (55–120, default 85)
-history             ← últimas 8 interacciones para contexto Claude
-pendingLocationRequest ← 'duracion_sol' | null
-```
+## `.github/workflows/deploy-lambda-private.yml`
+Único workflow activo. Trigger: push a `main`. Incluye `wait function-updated` antes y después del deploy. Verifica archivos secretos presentes.
+
+## `scripts/configure-lambda-env.ps1`
+Sincroniza `.env` local → variables de entorno Lambda.

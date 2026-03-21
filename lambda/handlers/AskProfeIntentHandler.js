@@ -197,6 +197,39 @@ const AskProfeIntentHandler = {
         const attributesManager = handlerInput.attributesManager;
         const sessionAttributes = attributesManager.getSessionAttributes();
 
+        // ── MODO SECRETO: interceptar si está activo ──────────────────────────
+        if (sessionAttributes.modoSecreto === true) {
+            const rawInput = (handlerInput.requestEnvelope.request.intent.slots?.question?.value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const arteDetectado = [
+                ['gramatica',  /^(gramatica|lenguaje|palabras)/],
+                ['retorica',   /^(retorica|oratoria|discurso)/],
+                ['logica',     /^(logica|razonamiento|argumentacion)/],
+                ['aritmetica', /^(aritmetica|numeros|calculo)/],
+                ['geometria',  /^(geometria|formas|figuras)/],
+                ['musica',     /^(musica|armonia|melodia)/],
+                ['astronomia', /^(astronomia|cosmos|estrellas)/],
+                ['maestro',    /^(maestro|mason)/]
+            ].find(([, re]) => re.test(rawInput));
+
+            if (arteDetectado) {
+                const arteId = arteDetectado[0];
+                const pregunta = rawInput.replace(/^\S+\s*/, '').trim() || `¿Qué puedes enseñarme sobre ${arteId}?`;
+                const { procesarArteLiberal } = require('./artesLiberalesRoutes');
+                sessionAttributes.arteActual = arteId;
+                attributesManager.setSessionAttributes(sessionAttributes);
+                try {
+                    const resultado = await procesarArteLiberal(pregunta, arteId, handlerInput);
+                    return handlerInput.responseBuilder
+                        .speak(resultado.speech)
+                        .reprompt('¿Deseas explorar otra arte liberal, hermano?')
+                        .getResponse();
+                } catch (e) {
+                    console.error('[MODO-SECRETO] Error desde AskProfe interceptor:', e);
+                }
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         // Inicializar atributos de sesión con valores por defecto
         if (!sessionAttributes.memory) sessionAttributes.memory = {};
         if (!sessionAttributes.history) sessionAttributes.history = [];
@@ -207,6 +240,10 @@ const AskProfeIntentHandler = {
         if (typeof sessionAttributes.darkMode === 'undefined') sessionAttributes.darkMode = false;
         if (typeof sessionAttributes.zoomLevel === 'undefined') sessionAttributes.zoomLevel = 85;
         if (typeof sessionAttributes.pendingLocationRequest === 'undefined') sessionAttributes.pendingLocationRequest = null;
+        // Limpiar wolframData al iniciar nueva pregunta — evita que datos SBS del turno anterior
+        // acumulen URLs en sesión y superen el límite de 24KB de Alexa
+        sessionAttributes.wolframData = null;
+        sessionAttributes.currentWolframStep = 0;
 
         // Obtener ubicación del dispositivo de forma asíncrona (para preguntas sobre duración del sol)
         const locationPromise = (async () => {
@@ -346,9 +383,9 @@ const AskProfeIntentHandler = {
             keyword = normalizarNotacionMatematica(keyword);
             console.log(`[KEYWORD-MATH] "${keyword}" | T+${Date.now() - startTime}ms`);
             try {
-                const resultadoMath = await ejecutarRutaMatematica(question, keyword, startTime);
-                if (!resultadoMath) {
-                    sessionAttributes._wolframYaFallo = true;
+                const resultadoMath = await ejecutarRutaMatematica(question, keyword, startTime, sessionAttributes.history.slice(-4));
+                if (!resultadoMath || resultadoMath.fallback) {
+                    if (resultadoMath?.wolframFailed) sessionAttributes._wolframYaFallo = true;
                 } else {
                     // Aplicar whisper mode si está activo
                     let speechOutput = resultadoMath.speech;
@@ -363,6 +400,7 @@ const AskProfeIntentHandler = {
                     sessionAttributes.lastDisplayBottom = resultadoMath.displayBottom;
                     sessionAttributes.lastImagenes = resultadoMath.imagenes.slice(0, 12);
                     sessionAttributes.lastImagenesPasos = (resultadoMath.imagenesPasos || []).slice(0, 20);
+                    sessionAttributes.lastStepByStepData = (resultadoMath.stepByStepData || []).slice(0, 5);
                     sessionAttributes.lastFuenteWolfram = true;
                     sessionAttributes.lastFuenteWikipedia = false;
                     sessionAttributes.history.push(
@@ -387,7 +425,9 @@ const AskProfeIntentHandler = {
                                 datasources: {
                                     templateData: {
                                         titulo: resultadoMath.tituloAPL || formatearTituloMatematico(keyword),
-                                        textoSuperior: resultadoMath.displayTop,
+                                        // textoSuperior = resultado concreto de Wolfram (no repite el título)
+                                        textoSuperior: resultadoMath.displayTopAPL || resultadoMath.displayTop,
+                                        // textoInferior = explicación del proceso de Claude (complementa la voz)
                                         textoInferior: resultadoMath.displayBottom,
                                         imagenes: resultadoMath.imagenes.slice(0, 12),
                                         imagenesExtra: [],
@@ -453,7 +493,7 @@ const AskProfeIntentHandler = {
         if (esPreguntaCientifica(question)) {
             console.log('[ROUTE] Detectada pregunta CIENTÍFICA');
             try {
-                const resultadoScience = await ejecutarRutaCientifica(question, keyword, startTime);
+                const resultadoScience = await ejecutarRutaCientifica(question, keyword, startTime, sessionAttributes.history.slice(-4));
                 if (resultadoScience) {
                     let speechOutput = resultadoScience.speech;
                     if (sessionAttributes.whisperMode)
@@ -465,8 +505,10 @@ const AskProfeIntentHandler = {
                     sessionAttributes.lastDisplayTop = resultadoScience.displayTop;
                     sessionAttributes.lastDisplayBottom = resultadoScience.displayBottom;
                     sessionAttributes.lastImagenes = resultadoScience.imagenes.slice(0, 12);
-                    sessionAttributes.lastFuenteWolfram = true;
-                    sessionAttributes.lastFuenteWikipedia = true;
+                    sessionAttributes.imagenesExtraPool = resultadoScience.imagenesExtraPool || [];
+                    sessionAttributes.imagenesExtraOffset = 6;
+                    sessionAttributes.lastFuenteWolfram = resultadoScience.fuenteWolfram;
+                    sessionAttributes.lastFuenteWikipedia = resultadoScience.fuenteWikipedia;
                     sessionAttributes.history.push(
                         { role: 'user', content: question },
                         { role: 'assistant', content: resultadoScience.speech }
@@ -488,17 +530,17 @@ const AskProfeIntentHandler = {
                                 document: generarAPL(sessionAttributes.darkMode),
                                 datasources: {
                                     templateData: {
-                                        titulo: `Ciencia: ${keyword}`,
-                                        textoSuperior: resultadoScience.displayTop,
+                                        titulo: resultadoScience.displayTop || keyword,
+                                        textoSuperior: resultadoScience.displayTop || keyword,
                                         textoInferior: resultadoScience.displayBottom,
                                         imagenes: resultadoScience.imagenes.slice(0, 12),
-                                        imagenesExtra: [],
-                                        fuenteWolfram: true,
-                                        fuenteWikipedia: true,
-                                        fuenteGoogle: false,
+                                        imagenesExtra: resultadoScience.imagenesExtraIniciales || [],
+                                        fuenteWolfram: resultadoScience.fuenteWolfram,
+                                        fuenteWikipedia: resultadoScience.fuenteWikipedia,
+                                        fuenteGoogle: resultadoScience.fuenteNASA,
                                         canStepByStep: false,
                                         masPasosDisponibles: false,
-                                        hayMasImagenes: false,
+                                        hayMasImagenes: resultadoScience.hayMasImagenes || false,
                                         keyword,
                                         originalQuestion: question,
                                         originalQuestionEn: questionEn,
@@ -523,7 +565,10 @@ const AskProfeIntentHandler = {
 
         // Iniciar tareas asíncronas para optimizar tiempo de respuesta
         const tituloIA_Promise = traducirTituloVisual(keyword);
-        const imagenesExtraPromise = buscarImagenesExtra(keyword, 30);
+        // NO buscar imágenes extra para preguntas matemáticas (ya tienen imágenes de Wolfram)
+        const imagenesExtraPromise = esPreguntaMatematica(question) 
+            ? Promise.resolve([]) 
+            : buscarImagenesExtra(keyword, 6);
 
         // Enviar Progressive Response para mejorar experiencia de usuario durante procesamiento
         if (canSendProgressive(handlerInput)) {
@@ -638,8 +683,8 @@ const AskProfeIntentHandler = {
 
                 console.log(`[SOURCES] wolfram=${wolfram.texto.length}ch imgs=${wolfram.imagenes.length} wolframOK=${wolframLlego} | wiki=${wiki.texto.length}ch | T+${Date.now() - startTime}ms`);
 
-                const timeoutClaude = Math.max(1800, DEADLINE - Date.now() - 100);
-                console.log(`[CLAUDE-BUDGET] ${timeoutClaude}ms disponibles para Claude | T+${Date.now() - startTime}ms`);
+                const timeoutClaude = Math.max(1800, DEADLINE - Date.now() - 50);
+                console.log(`[CLAUDE-BUDGET] ${timeoutClaude}ms | modo=${preguntaNecesitaWolfram ? 'DINAMICO' : 'ESTATICO'} | wolfram=${wolfram.texto.length}ch | wiki=${wiki.texto.length}ch | T+${Date.now() - startTime}ms`);
 
                 // En modo ESTATICA: Claude arranca con wiki (ya disponible), Gemini llega para display.
                 // En modo DINAMICA: gemini ya está resuelto arriba.
@@ -704,16 +749,11 @@ const AskProfeIntentHandler = {
             if (sessionAttributes.whisperMode)
                 speechOutput = `<amazon:effect name="whispered">${speechOutput.replace(/<[^>]+>/g, '')}</amazon:effect>`;
 
-            if (!cachedResult) {
-                sessionAttributes.imagenesExtraPool = imagenesExtraPool;
-                sessionAttributes.imagenesExtraOffset = 6;
-            } else {
-                // Caché hit: actualizar pool con imágenes frescas del keyword actual
-                sessionAttributes.imagenesExtraPool = imagenesExtraPool;
-                sessionAttributes.imagenesExtraOffset = 6;
-            }
+            // No guardar pool en sesion — excede limite 24KB de Alexa
+            sessionAttributes.imagenesExtraPool = [];
+            sessionAttributes.imagenesExtraOffset = 0;
             const imagenesExtraIniciales = imagenesExtraPool.slice(0, 6);
-            const hayMasImagenes = imagenesExtraPool.length > 6;
+            const hayMasImagenes = false;
 
             sessionAttributes.lastQuestion = question;
             sessionAttributes.lastSubject = sintesisResult.keyword || keyword;

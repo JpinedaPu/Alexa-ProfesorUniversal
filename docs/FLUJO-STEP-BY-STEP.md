@@ -1,138 +1,146 @@
-# Wolfram Alpha Step-by-Step — Documentación Técnica
+# Wolfram Step-by-Step — Flujo Actual (Marzo 2026)
 
-Hallazgos reales obtenidos por diagnóstico directo contra la API (marzo 2026).
+## Flujo completo end-to-end
+
+### FASE 1 — Pregunta normal (mathRoute)
+
+```
+Usuario: "cuál es la derivada de x² · sin(x)"
+  ↓
+T+0ms    → esPreguntaMatematica() — regex detecta "derivada"
+T+1ms    → obtenerKeyword() FAST PATH → "derivative of x^2 * sin(x)"
+T+1ms    → Claude arranca en paralelo (prompt matemático, sin texto Wolfram)
+T+1ms    → consultarWolfram(isStepByStep:false, timeoutMs=FASE1_TIMEOUT)
+             → 1 llamada HTTP
+             → devuelve: imagenes normales + texto + stepByStepData
+T+2500ms → Claude responde (con conocimiento propio)
+T+3500ms → Wolfram completa
+           → Si queda ≥1800ms: Claude se relanza con texto Wolfram
+T+~5500ms → Respuesta enviada
+
+sessionAttributes guardados:
+  lastKeyword = "derivative of x^2 * sin(x)"
+  lastStepByStepData = [{input: "Input__Step-by-step solution", podId: "Input", isPrimary: true}]
+  lastImagenes = [12 pods normales de Wolfram]
+  lastImagenesPasos = [] (vacío — lazy loading)
+  canStepByStep = true
+```
+
+APL muestra: imágenes normales + botón "Paso a Paso" (si canStepByStep=true)
 
 ---
 
-## Flujo de 2 llamadas (implementado en `wolfram.js`)
-
-### Llamada 1 — Resultado normal + detección de podstates
-
-Sin `podstate`. Devuelve todos los pods normales y en cada pod puede haber `pod.states[]`
-con un state cuyo `name` contiene `"step-by-step"`. Se guarda `state.input` para la llamada 2.
+### FASE 2A — Botón APL "Paso a Paso" (hasStepByStepData)
 
 ```
-GET /v2/query?appid=...&input=derivative+of+3x^2+...&output=json&format=image,plaintext
+Usuario toca botón APL
+  ↓
+index.js APLUserEventHandler (args[0] === 'StepByStep'):
+  sa.wolframData = {
+    keyword: lastKeyword,           // "derivative of x^2 * sin(x)"
+    keywordMath: lastKeyword,       // ya en inglés — salta GPT
+    imagenes: [],
+    stepByStepData: lastStepByStepData,  // podstates de fase1
+    imagenesNormales: lastImagenes
+  }
+  sa.currentWolframStep = 0
+  → WolframAlphaModeIntentHandler.handle(h, keyword)
+
+WolframAlphaModeIntentHandler detecta hasStepByStepData=true:
+  → NO consulta DynamoDB
+  → NO llama GPT
+  → sbsBudget = max(4000, 7800 - elapsed - 2000)
+  → consultarWolfram(keywordMath, isStepByStep:true, timeoutMs:sbsBudget)
+       → Llamada 1: re-detecta podstates (~1s)
+       → Llamada 2: expande pasos con "Show all steps" (~2s)
+       → devuelve 4-7 imágenes SBS
+  → currentWolframStep = 0
+  → Muestra pasos 1-3
+  → Claude explica pasos 1-3
+  → "Cuando quieras continuar, di continúa."
 ```
-
-Resultado guardado en `imagenesNormales` — lo que se muestra en la primera pantalla.
-
-### Llamada 2 — Pasos expandidos
-
-Con doble `podstate`: el SBS + el "Show all steps" del mismo pod.
-
-```
-GET /v2/query?...&podstate=Input__Step-by-step+solution&podstate=Input__Show+all+steps
-```
-
-Wolfram devuelve **todos los pods de la llamada 1 repetidos** más el pod primary expandido
-con los subpods de pasos. El código extrae **solo el pod `primary:true`** para evitar
-incluir los pods normales repetidos.
-
-Resultado guardado en `imagenes` (los pasos SBS).
 
 ---
 
-## Reglas críticas de la API (confirmadas por diagnóstico)
-
-### 1. El `id` de un pod NO es predecible desde su título
-
-El pod que visualmente dice **"Derivative"** tiene `id="Input"` en Wolfram.
-El pod que dice **"Indefinite integral"** tiene `id="IndefiniteIntegral"`.
-
-**Nunca buscar por `pod.id` hardcodeado. Siempre usar `pod.primary === true`.**
-
-### 2. Múltiples pods pueden tener `step-by-step` disponible
-
-Para `derivative of 3x^2 + 6x^3 + 3x` la llamada 1 devuelve 4 podstates:
+### FASE 2B — Voz "modo wolfram [ecuación]"
 
 ```
-pod id='Input'           (Derivative)     → Input__Step-by-step solution       primary:true
-pod id='ComplexSolution' (Complex roots)  → ComplexSolution__Step-by-step solution  primary:true
-pod id='IndefiniteIntegral'               → IndefiniteIntegral__Step-by-step solution primary:true
-pod id='GlobalMinimum'                    → GlobalMinimum__Step-by-step solution  primary:false
+Usuario: "modo wolfram, integral de x al cuadrado"
+  ↓
+WolframAlphaModeIntentHandler (nuevo query):
+  → convertirANotacionMatematica() — GPT ~800ms
+  → Progressive Response en paralelo
+  → consultarWolfram(keywordMath, isStepByStep:true, wolframBudget=max(5000,...))
+       → 2 llamadas HTTP (~5s total)
+  → guardarSessionCache() — DynamoDB
+  → Muestra pasos 1-3 + Claude explica
 ```
 
-**Siempre usar el podstate del pod `primary:true` que aparezca primero.**
-El código anterior filtraba `podId !== 'Input'` — esto descartaba el pod correcto
-porque el pod Derivative tiene `id="Input"`.
+---
 
-### 3. `stepbystepcontenttype` no siempre existe
+### FASE 3 — Continuación ("continúa")
 
-Los subpods de tipo `SBSStep` / `SBSHintStep` solo aparecen en ciertos pods (ej: `Input`
-para derivadas simples). Para pods como `ComplexSolution` o `IndefiniteIntegral`, los
-subpods de pasos **no tienen ese campo** — son subpods normales con imagen.
+```
+ContinueWolframIntentHandler.canHandle():
+  → verifica wolframData.imagenes.length > currentWolframStep
+  → delega a WolframAlphaModeIntentHandler('CONTINUE_WOLFRAM_MODE')
 
-El filtro correcto en la llamada 2:
+isContinue=true:
+  → busca en DynamoDB primero (cachedSession)
+  → si hay caché: incrementa página, muestra pasos 4-6
+  → si no: usa sessionAttributes.wolframData.imagenes
+  → Claude explica los nuevos pasos
+```
+
+---
+
+## Reglas críticas de la API Wolfram (confirmadas)
+
+**1. El `id` del pod NO es predecible desde su título**
+El pod "Derivative" tiene `id="Input"`. Nunca buscar por id hardcodeado — usar `pod.primary === true`.
+
+**2. Múltiples pods pueden tener step-by-step**
+Para `derivative of 3x^2 + 6x^3 + 3x` hay 4 podstates. Usar el primero con `isPrimary:true`.
+
+**3. `stepbystepcontenttype` no siempre existe**
+Filtro en llamada 2: `sbsType === 'SBSStep' || sbsType === 'SBSHintStep'`. Si el campo no existe, fallback a `width > 50`.
+
+**4. `includepodid` bloquea el SBS**
+Nunca combinar `&includepodid=X` con `&podstate=...` en la llamada 2.
+
+**5. Llamada 2 repite todos los pods normales**
+Extraer solo `pods.find(p => p.primary === true)` en la llamada 2.
+
+---
+
+## Estructura de `consultarWolfram()` en modo SBS
+
 ```js
-const sbsType = subpod.stepbystepcontenttype;
-const incluir = sbsType
-    ? (sbsType === 'SBSStep' || sbsType === 'SBSHintStep')
-    : parseInt(subpod.img.width || 0) > 50;  // fallback por tamaño
-```
-
-### 4. `includepodid` bloquea el SBS — nunca usarlo en la llamada 2
-
-Combinar `&includepodid=X` con `&podstate=...` en la misma URL hace que Wolfram
-devuelva la respuesta sin expandir los pasos. La llamada 2 nunca debe incluir `includepodid`.
-
-### 5. Wolfram repite todos los pods normales en la llamada 2
-
-La llamada 2 no devuelve solo el pod expandido — devuelve **todos los pods** de la
-llamada 1 más el pod primary con los pasos. Si se procesan todos los pods con el
-fallback de `width > 50`, se incluyen los pods normales repetidos (bug: "mismos pods de 3 en 3").
-
-**Solución: en la llamada 2, procesar únicamente `pods.find(p => p.primary === true)`.**
-
-### 6. Métodos alternativos NO están disponibles en la API pública
-
-La interfaz web de Wolfram Pro muestra "Using method: factorización / fórmula cuadrática"
-con `statelist` de opciones. Esto **no existe en la API pública** — solo hay `states`
-simples con `"Step-by-step solution"`. No hay forma de elegir método de solución vía API.
-
----
-
-## Estructura de datos que devuelve `consultarWolfram()` en modo SBS
-
-```js
+// Retorno
 {
-  imagenes: [...],          // subpods del pod primary:true de la llamada 2 (los pasos)
-  imagenesNormales: [...],  // todos los pods de la llamada 1 (primera pantalla)
-  texto: "...",             // plaintext concatenado de llamada 1 (para Claude)
-  textoResult: "...",       // alt del pod Result si no hay plaintext
+  imagenes: [...],          // subpods del pod primary:true (los pasos)
+  imagenesNormales: [...],  // todos los pods de llamada 1 (primera pantalla)
+  texto: "...",             // plaintext de llamada 1 (para Claude)
+  textoResult: "...",       // alt del pod Result
   canStepByStep: true,      // solo true si llamada 2 devolvió imágenes
-  stepByStepInputs: [...]   // todos los state.input encontrados en llamada 1
+  stepByStepInputs: [...]   // todos los state.input de llamada 1
 }
 ```
 
 ---
 
-## Bugs corregidos y sus causas raíz
-
-| Bug | Causa | Fix |
-|-----|-------|-----|
-| `0 imgs (de 8 pods)` en llamada 2 | `stepbystepcontenttype` ausente en pods `ComplexSolution` | Fallback a filtro por `width > 50` cuando el campo no existe |
-| Mismos pods normales de 3 en 3 | Llamada 2 procesaba todos los pods (normales repetidos + pasos) | Extraer solo `pod.primary === true` en llamada 2 |
-| Paso a paso empezaba en paso 3 | `currentWolframStep` con valor residual de sesión anterior | Forzar reset a `0` en `index.js` y `WolframAlphaModeIntentHandler.js` al detectar `hasInjectedData` |
-| Botón SBS re-llamaba Wolfram (8s) | `index.js` hacía nueva llamada al pulsar el botón | Botón inyecta `lastImagenesPasos` en sesión, no re-llama Wolfram |
-| `paso 4-6/4` fuera de rango | `endIdx` no estaba limitado con `Math.min` | `endIdx = Math.min(startIdx + stepsPerPage, totalSteps)` |
-| `canStepByStep: true` cuando llamada 2 falló | Se asignaba `true` antes de verificar si había imágenes | `canStepByStep = stepResult.imagenes.length > 0` |
-| Texto inferior en inglés | `displayBottom` usaba `textoResultado` (texto crudo Wolfram) | Usar `claudeResponse?.displayBottom` (Claude genera en español) |
-| "Input interpretation" no aparecía | `podsPrioritarios` no incluía `"Input"` (el title que Wolfram usa a veces) | Añadir `"Input"` al array de pods prioritarios |
-| Podstate incorrecto elegido | Código filtraba `podId !== 'Input'` descartando el pod Derivative | Usar simplemente `candidatos.find(d => d.isPrimary)` |
-
----
-
-## Presupuesto de tiempo (deadline Alexa: 8s)
+## Presupuesto de tiempo
 
 ```
-T+0ms     → Inicio request
-T+~55ms   → Keyword extraído (GPT fast path)
-T+~1000ms → Llamada 1 Wolfram completa
-T+~3500ms → Llamada 2 Wolfram completa (budget: remainingMs - 200, max 2800ms)
-T+~3500ms → Claude inicia (budget: max(2000, 7400 - elapsed))
-T+~6800ms → Claude completa
-T+~7000ms → Respuesta enviada a Alexa
-```
+mathRoute (FASE 1):
+  DEADLINE = startTime + PERFORMANCE.GLOBAL_DEADLINE_MS (7850ms)
+  FASE1_TIMEOUT = min(3500, DEADLINE - now - 1800ms)
+  claudeBudget = max(1500, DEADLINE - now - 100ms)
 
-Alexa corta a 8s. Lambda timeout configurado a 15s como red de seguridad.
+WolframAlphaModeIntentHandler (FASE 2A botón):
+  sbsBudget = max(4000, 7800 - elapsed - 2000ms)
+
+WolframAlphaModeIntentHandler (FASE 2B voz):
+  wolframBudget = max(5000, 7800 - elapsed - 2500ms)
+  claudeBudget = max(2000, 7800 - elapsed - 200ms)
+```

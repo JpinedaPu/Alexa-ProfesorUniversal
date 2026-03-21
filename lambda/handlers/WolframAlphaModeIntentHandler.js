@@ -89,6 +89,9 @@ async function convertirANotacionMatematica(preguntaEs) {
         });
         req.on('error', () => resolve(preguntaEs));
         req.on('timeout', () => { req.destroy(); resolve(preguntaEs); });
+        req.on('response', (res) => {
+            if (res.statusCode !== 200) console.log(`[WOLF-MODE] GPT conversion HTTP ${res.statusCode} | fallback a query original`);
+        });
         req.write(payload);
         req.end();
     });
@@ -120,19 +123,25 @@ const WolframAlphaModeIntentHandler = {
 
         // Determinar si es una continuación de paginación
         const isContinue = overrideKeyword === 'CONTINUE_WOLFRAM_MODE';
-        // Detectar si viene del botón APL con datos ya inyectados (no re-llamar Wolfram)
-        const hasInjectedData = !isContinue && overrideKeyword
+        // Detectar si viene del botón APL con stepByStepData inyectado (podstates de fase1)
+        const hasStepByStepData = !isContinue && overrideKeyword
+            && sessionAttributes.wolframData
+            && Array.isArray(sessionAttributes.wolframData.stepByStepData)
+            && sessionAttributes.wolframData.stepByStepData.length > 0;
+        // Detectar si viene del botón APL con imágenes ya expandidas (flujo antiguo)
+        const hasInjectedData = !isContinue && !hasStepByStepData && overrideKeyword
             && sessionAttributes.wolframData
             && Array.isArray(sessionAttributes.wolframData.imagenes)
             && sessionAttributes.wolframData.imagenes.length > 0;
 
-        // Si viene del botón con datos inyectados, saltar caché y usar directamente
-        if (hasInjectedData) {
+        if (hasStepByStepData) {
+            console.log(`[WOLF-MODE] stepByStepData inyectado: ${sessionAttributes.wolframData.stepByStepData.length} podstates — saltando GPT`);
+        } else if (hasInjectedData) {
             console.log(`[WOLF-MODE] Datos inyectados: ${sessionAttributes.wolframData.imagenes.length} pasos`);
         }
 
         // 1. BUSCAR EN CACHÉ PRIMERO (DynamoDB) — solo si no hay datos inyectados
-        const cachedSession = hasInjectedData ? null : await buscarSessionCache(sessionId, userId);
+        const cachedSession = (hasInjectedData || hasStepByStepData) ? null : await buscarSessionCache(sessionId, userId);
         
         if (cachedSession && isContinue) {
             console.log('[CACHE] ✅ Session encontrada - Continuando paginación');
@@ -255,6 +264,31 @@ INSTRUCCIONES — responde SOLO con JSON válido:
             if (isContinue && sessionAttributes.wolframData) {
                 // Reuso de datos ya obtenidos — no llama a Wolfram de nuevo
                 wolfram = sessionAttributes.wolframData;
+            } else if (hasStepByStepData) {
+                // Viene del botón APL con stepByStepData — hacer directamente la fase2 de Wolfram
+                // keyword ya está en inglés (lastKeyword) — NO llamar GPT
+                keywordMath = sessionAttributes.wolframData.keywordMath || keyword;
+                const sbd = sessionAttributes.wolframData.stepByStepData;
+                const mejorPod = sbd.find(d => d.podId === 'Input') || sbd.find(d => d.isPrimary) || sbd[0];
+                const sbsBudget = Math.max(4000, 7800 - (Date.now() - startTime) - 2000);
+                console.log(`[WOLF-MODE] Fase2 directa | podstate: ${mejorPod.input} | budget: ${sbsBudget}ms`);
+                const sbsInput = mejorPod.input;
+                const showAllInput = `${sbsInput.split('__')[0]}__Show all steps`;
+                // Llamar directamente consultarWolframInternal con los podstates conocidos
+                // Reutilizamos consultarWolfram con isStepByStep:true pero pasando stepByStepData ya conocido
+                wolfram = await withTimeout(
+                    consultarWolfram(keywordMath, null, { isStepByStep: true, timeoutMs: sbsBudget }),
+                    sbsBudget + 300,
+                    { imagenes: [], texto: sessionAttributes.wolframData.texto || '', canStepByStep: false }
+                );
+                sessionAttributes.currentWolframStep = 0;
+                // Actualizar wolframData con los pasos obtenidos
+                sessionAttributes.wolframData = {
+                    ...sessionAttributes.wolframData,
+                    imagenes: wolfram.imagenes || [],
+                    canStepByStep: wolfram.canStepByStep || false
+                };
+                console.log(`[WOLF-MODE] Fase2 completada: ${wolfram.imagenes?.length || 0} pasos | T+${Date.now()-startTime}ms`);
             } else if (hasInjectedData) {
                 // Viene del botón APL — datos ya inyectados por index.js, no re-llamar Wolfram
                 wolfram = sessionAttributes.wolframData;
@@ -292,17 +326,18 @@ INSTRUCCIONES — responde SOLO con JSON válido:
                 [keywordMath] = await Promise.all([conversionPromise, progressivePromise]);
                 console.log(`[WOLF-MODE] Query final para Wolfram: "${keywordMath}"`);
 
-                // Budget: 7800ms total - elapsed - 3500ms para Claude = tiempo para Wolfram
-                const wolframBudget = Math.max(3500, 7800 - (Date.now() - startTime) - 3500);
+                // Budget: 7800ms total - elapsed - 2500ms para Claude = tiempo para Wolfram
+                // Necesitamos ~4500ms para las 2 llamadas Wolfram (1000ms + 3500ms)
+                const wolframBudget = Math.max(5000, 7800 - (Date.now() - startTime) - 2500);
                 wolfram = await withTimeout(
                     consultarWolfram(keywordMath, null, { isStepByStep: true, timeoutMs: wolframBudget }),
                     wolframBudget + 300,
                     { imagenes: [], texto: '', canStepByStep: false }
                 );
 
-                // 3. GUARDAR EN CACHÉ (DynamoDB)
+                // 3. GUARDAR EN CACHÉ (DynamoDB) — fire-and-forget, no bloquear el camino crítico
                 if (wolfram.imagenes && wolfram.imagenes.length > 0) {
-                    await guardarSessionCache({
+                    guardarSessionCache({
                         sessionId,
                         userId,
                         originalQuestion: keyword,
@@ -311,12 +346,12 @@ INSTRUCCIONES — responde SOLO con JSON válido:
                         wolframResponse: {
                             allSteps: wolfram.imagenes,
                             totalSteps: wolfram.imagenes.length,
-                            imagenesNormales: wolfram.imagenesNormales || [] // ← NUEVO: Guardar pods normales
+                            imagenesNormales: wolfram.imagenesNormales || []
                         },
                         currentPage: 0,
                         stepsPerPage: 3,
                         timestamp: Date.now()
-                    });
+                    }).catch(e => console.log('[WOLF-MODE] Cache skip:', e.message));
                 }
 
                 // Persistir en sesión para paginación (fallback)
@@ -386,7 +421,7 @@ INSTRUCCIONES — responde SOLO con JSON válido:
 - "displayBottom": qué viene después o dato útil en español (ej: "Siguiente: agregar la constante de integración")
 - Sin símbolos unicode (², √, π, ∞). TODO en ESPAÑOL.`;
 
-            const claudeBudget = Math.max(2500, 7800 - (Date.now() - startTime) - 200);
+            const claudeBudget = Math.max(2000, 7800 - (Date.now() - startTime) - 200);
             const sintesisResult = await withTimeout(
                 consultarClaude(keyword, textoES, '', '', keyword, [], { prompt: promptRespuesta, timeout: claudeBudget }),
                 claudeBudget + 300,

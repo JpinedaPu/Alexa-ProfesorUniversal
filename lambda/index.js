@@ -79,7 +79,7 @@ function aplDatasource(sessionAttributes, overrides = {}) {
             textoSuperior:   sessionAttributes.lastDisplayTop    || '',
             textoInferior:   sessionAttributes.lastDisplayBottom || '',
             imagenes:        sessionAttributes.lastImagenes       || [],
-            imagenesExtra:   (sessionAttributes.imagenesExtraPool || []).slice(0, sessionAttributes.imagenesExtraOffset || 6),
+            imagenesExtra:   (() => { const off = sessionAttributes.imagenesExtraOffset || 6; return (sessionAttributes.imagenesExtraPool || []).slice(Math.max(0, off - 6), off); })(),
             fuenteWolfram:   !!sessionAttributes.lastFuenteWolfram,
             fuenteWikipedia: !!sessionAttributes.lastFuenteWikipedia,
             fuenteGoogle:    false,
@@ -306,19 +306,18 @@ const APLUserEventHandler = {
 
         // Activar modo paso a paso de Wolfram
         if (args[0] === 'StepByStep') {
-            const imagenesPasos = sa.lastImagenesPasos || [];
             const keyword = sa.lastKeyword || args[1] || '';
-            // Inyectar pasos ya capturados en wolframData — sin re-llamar Wolfram
-            // currentWolframStep SIEMPRE en 0 para empezar desde el paso 1
+            const stepByStepData = sa.lastStepByStepData || [];
+            // imagenesNormales NO se guarda en wolframData — puede exceder 24KB de sesión
             sa.wolframData = {
                 keyword,
                 keywordMath: keyword,
-                imagenes: imagenesPasos,
-                imagenesNormales: sa.lastImagenes || [],
+                imagenes: [],
                 texto: sa.lastDisplayBottom || '',
-                canStepByStep: imagenesPasos.length > 0
+                canStepByStep: stepByStepData.length > 0,
+                stepByStepData
             };
-            sa.currentWolframStep = 0;  // reset explícito siempre
+            sa.currentWolframStep = 0;
             h.attributesManager.setSessionAttributes(sa);
             return WolframAlphaModeIntentHandler.handle(h, keyword);
         }
@@ -331,7 +330,7 @@ const APLUserEventHandler = {
         // Cargar más imágenes del pool
         if (args[0] === 'verMasImagenes') {
             const pool   = sa.imagenesExtraPool || [];
-            const offset = sa.imagenesExtraOffset || 6;
+            const offset = sa.imagenesExtraOffset || 0;
             const siguientes = pool.slice(offset, offset + 6);
             sa.imagenesExtraOffset = offset + 6;
             const hayMas = sa.imagenesExtraOffset < pool.length;
@@ -375,6 +374,14 @@ const NavigateHomeIntentHandler = {
             && Alexa.getIntentName(h.requestEnvelope) === 'AMAZON.NavigateHomeIntent';
     },
     handle(h) {
+        const sa = h.attributesManager.getSessionAttributes();
+        // Limpiar contexto conversacional pero preservar preferencias de UI
+        sa.lastKeyword = ''; sa.lastSubject = ''; sa.lastQuestion = '';
+        sa.lastDisplayTop = ''; sa.lastDisplayBottom = '';
+        sa.lastImagenes = []; sa.imagenesExtraPool = []; sa.imagenesExtraOffset = 0;
+        sa.wolframData = null; sa.currentWolframStep = 0;
+        sa.pendingAmbiguity = null; sa.pendingLocationRequest = null;
+        h.attributesManager.setSessionAttributes(sa);
         return h.responseBuilder
             .speak('Listo, volvimos al inicio. ¿Qué tema quieres consultar?')
             .reprompt('¿Qué tema quieres consultar?').getResponse();

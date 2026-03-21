@@ -1,179 +1,96 @@
 # Referencia Rápida — Profesor Universal IA
 
----
+## Deploy
 
-## Comandos Esenciales
-
-```powershell
-# Deploy principal (con modo secreto incluido)
-git add . && git commit -m "feat: descripción" && git push private main
-
-# Deploy repo público (portfolio, opcional) — el hook bloquea si hay archivos secretos trackeados
-git push origin main
-
-# Sincronizar .env local → Lambda
-.\scripts\configure-lambda-env.ps1 -FunctionName "AlexaProfesorUniversal"
-
-# Ver logs en tiempo real
-aws logs tail /aws/lambda/AlexaProfesorUniversal --follow --region us-east-1
-
-# Buscar errores
-aws logs filter-log-events --log-group-name /aws/lambda/AlexaProfesorUniversal --filter-pattern "ERROR" --region us-east-1
-```
-
----
-
-## Arquitectura de Dos Repositorios
-
-| | Repo público (`origin`) | Repo privado (`private`) |
-|---|---|---|
-| URL | `Alexa-ProfesorUniversal` | `Alexa-ProfesorUniversal-private` |
-| Archivos secretos | ❌ No | ✅ Sí |
-| Deploy a Lambda | ❌ Desactivado | ✅ Activo |
-| Workflow | `ci.yml` (solo validación) | `deploy-lambda-private.yml` |
-
-### Protección contra filtración del modo secreto
-
-Hay un **pre-push hook** en `.git/hooks/pre-push` que bloquea automáticamente cualquier `git push origin main` si detecta que los archivos del modo secreto están trackeados en git:
-
-```
-❌ PUSH BLOQUEADO — Archivos del modo secreto detectados en el repo público:
-   lambda/handlers/SecretRouteIntentHandler.js
-   lambda/handlers/artesLiberalesRoutes.js
-   lambda/services/elevenlabs.js
-```
-
-Si ves este error, ejecuta:
 ```bash
-git rm --cached lambda/handlers/SecretRouteIntentHandler.js
-git rm --cached lambda/handlers/artesLiberalesRoutes.js
-git rm --cached lambda/services/elevenlabs.js
-git commit -m "chore: eliminar archivos secretos del tracking"
+git add .
+git commit -m "feat: descripción"
+git push private main
+# GitHub Actions despliega automáticamente (~60s)
 ```
 
-> **Nota:** El hook vive en `.git/hooks/` que no se sube a GitHub. Si clonas el repo en una máquina nueva, debes recrearlo manualmente desde `docs/FLUJO-STEP-BY-STEP.md` o copiando el archivo.
-
----
-
-## Archivos que Más se Tocan
-
-| Archivo | Cuándo editarlo |
-|---------|----------------|
-| `lambda/handlers/AskProfeIntentHandler.js` | Cambiar flujo principal de preguntas |
-| `lambda/handlers/WolframAlphaModeIntentHandler.js` | Ajustar modo paso a paso |
-| `lambda/services/apl.js` | Cambiar diseño visual APL |
-| `lambda/services/claude.js` | Ajustar prompts de síntesis |
-| `lambda/services/wolfram.js` | Optimizar consultas Wolfram |
-| `lambda/config/timeouts.js` | Ajustar timeouts por servicio |
-| `lambda/config/constants.js` | Cambiar límites UI, zoom, performance |
-| `skill-package/interactionModels/custom/es-ES.json` | Agregar utterances |
-
----
-
-## Patrones de Logs
-
-```
-[IN-ASK] Pregunta: "..." | T+0ms          ← Inicio del request
-[KEYWORD] "sol" | T+55ms                  ← GPT extrajo keyword
-[ROUTE] Detectada pregunta MATEMÁTICA     ← Ruta especializada activada
-[WOLFRAM-MODE] DINAMICA | gracia=800ms    ← Modo dinámico con Wolfram
-[WOLFRAM-MODE] ESTATICA | wiki=1200ch     ← Modo estático sin Wolfram
-[WOLFRAM-LATE] imgs=4 | T+4200ms         ← Wolfram llegó tarde pero útil
-[CACHE] HIT | T+120ms                    ← Cache S3 hit
-[WOLF-MODE] ✅ OK 5800ms | paso 1-3/9   ← Step-by-step exitoso
-[TOTAL] 5700ms                           ← Tiempo total del request
+Verificar deploy:
+```bash
+aws lambda get-function --function-name AlexaProfesorUniversal --region us-east-1 --query "Configuration.[LastModified,LastUpdateStatus]" --output text
 ```
 
----
+## Logs en tiempo real
 
-## Errores Comunes
-
-| Log | Causa | Acción |
-|-----|-------|--------|
-| `ERR_TIMEOUT` | API externa lenta | Normal si es puntual, revisar si es frecuente |
-| `ERR_PARSE` | Claude devolvió JSON inválido | Fallback automático, revisar prompt |
-| `NO_PODS` | Wolfram no entendió la query | GPT re-intenta con notación diferente |
-| `[APL] Error` | Directiva APL inválida | Revisar datasource en el handler |
-| `[HISTORY] Error` | DynamoDB no disponible | No crítico, historial no se guarda |
-
----
-
-## Variables de Entorno Requeridas
-
-```
-OPENAI_API_KEY      → GPT-4.1 Mini (keywords + conversión matemática)
-WOLFRAM_APP_ID      → Wolfram Alpha Full Results API
-GEMINI_API_KEY      → Gemini 3.1 Flash-Lite
-CLAUDE_API_KEY      → Claude 4.5 Haiku (si no usas Bedrock directo)
-ELEVENLABS_API_KEY  → Solo para modo secreto (opcional)
+```bash
+aws logs tail /aws/lambda/AlexaProfesorUniversal --region us-east-1 --follow
 ```
 
----
-
-## Servicios AWS Requeridos
-
-```
-Lambda    → AlexaProfesorUniversal (us-east-1)
-DynamoDB  → ProfesorUniversal-StepByStep
-DynamoDB  → ProfesorUniversal-UserHistory
-S3        → alexa-profesor-universal-cache-us-east-1
-Bedrock   → Claude 4.5 Haiku (us-east-1)
-```
-
----
-
-## Testing
-
-**Alexa Developer Console** → Test → escribir:
-```
-abre profesor universal
-pregunta qué es la fotosíntesis
-pregunta cuánto es la derivada de x al cuadrado
-activa modo wolfram y escribe: x^2 + 2x + 1
-modo oscuro
-acercar
-modo susurro
-```
-
----
-
-## Frases de Voz Disponibles
-
-| Frase | Intent | Efecto |
-|-------|--------|--------|
-| "modo oscuro / modo claro" | DarkModeIntent | Cambia tema APL |
-| "modo susurro / voz normal" | WhisperModeIntent | Toggle SSML whisper |
-| "acercar / alejar" | ZoomIntent | Zoom ±15% (30–150%) |
-| "modo wolfram" | WolframAlphaModeIntent | Activa step-by-step |
-| "continúa" | ContinueWolframIntent | Siguiente página de pasos |
-| "ir al resultado" | SkipToResultIntent | Salta al resultado final |
-| "repite mi última pregunta" | RepeatLastQuestionIntent | Recupera historial |
-| "ver más imágenes" | VerMasImagenesIntent | Siguiente lote NASA/Wiki |
-
----
-
-## Emergencias
+## Test directo en Lambda
 
 ```powershell
-# Skill no responde — verificar Lambda
-aws lambda get-function-configuration --function-name AlexaProfesorUniversal --region us-east-1
+# Crear payload (sin BOM)
+$enc = New-Object System.Text.UTF8Encoding $false
+$payload = @{ version="1.0"; session=@{...}; request=@{...} } | ConvertTo-Json -Depth 10 -Compress
+[System.IO.File]::WriteAllText("payload.json", $payload, $enc)
 
-# Rollback rápido
-git revert HEAD
-git push origin main
-
-# Verificar variables de entorno
-aws lambda get-function-configuration --function-name AlexaProfesorUniversal --region us-east-1 --query "Environment.Variables"
+# Invocar
+aws lambda invoke --function-name AlexaProfesorUniversal --region us-east-1 --cli-binary-format raw-in-base64-out --payload fileb://payload.json response.json
 ```
 
----
+## Sincronizar .env → Lambda
 
-## Documentación Completa
+```powershell
+.\scripts\configure-lambda-env.ps1 -FunctionName "AlexaProfesorUniversal"
+```
 
-| Doc | Contenido |
-|-----|-----------|
-| `docs/DOCUMENTACION_PROYECTO.md` | Arquitectura, AWS, despliegue, troubleshooting |
-| `docs/QUE_HACE_CADA_COSA.md` | Cada archivo explicado, flujo de sesión |
-| `docs/DIAGRAMA_ARQUITECTURA.md` | Diagramas ASCII de flujos y estructura |
-| `docs/FLUJO-STEP-BY-STEP.md` | Reglas críticas de la API Wolfram SBS |
-| `docs/MODO_SECRETO.md` | Las 7 voces ElevenLabs, deploy privado |
+## Datos clave
+
+| Dato | Valor |
+|---|---|
+| Skill ID | `amzn1.ask.skill.91893f76-ab13-4ee2-ad95-d803f3434ee5` |
+| Lambda ARN | `arn:aws:lambda:us-east-1:811710375370:function:AlexaProfesorUniversal` |
+| S3 Bucket | `alexa-profesor-universal-cache-us-east-1` |
+| Wolfram App ID | `6U3PEET6LV` (acceso Blake Gilbert) |
+| Claude modelo | `us.anthropic.claude-haiku-4-5-20251001-v1:0` |
+| Deadline global | 7850ms |
+
+## Frases de prueba
+
+| Frase | Ruta activada |
+|---|---|
+| `cuál es la derivada de equis al cuadrado por el seno de equis` | Matemática |
+| `cuánto es la integral de tres seno de equis mas equis al cuadrado` | Matemática |
+| `modo wolfram, derivada de x al cuadrado` | Wolfram SBS (voz) |
+| `continúa` | Paginación SBS |
+| `qué es un agujero negro` | Científica |
+| `quién fue Simón Bolívar` | General estático |
+| `cuánto cuesta el dólar hoy` | General dinámico |
+| `la palabra es Boaz` | Modo secreto |
+| `repite mi última pregunta` | Historial |
+| `modo oscuro` / `modo claro` | UI |
+| `acercar` / `alejar` | Zoom APL |
+
+## Marcadores de log importantes
+
+```
+[IN-ASK]        — slot capturado de Alexa
+[ROUTE]         — ruta detectada (MATEMÁTICA / CIENTÍFICA)
+[GPT-KW]        — keyword extraído (FAST PATH o GPT call)
+[KEYWORD-MATH]  — keyword normalizado para mathRoute
+[MATH-ROUTE]    — tiempos de Wolfram y Claude en ruta matemática
+[WOLFRAM]       — llamada a Wolfram Alpha
+[WOLFRAM-STEP]  — llamada 2 de Wolfram (SBS)
+[CLAUDE-BEDROCK]— llamada a Claude
+[WOLF-MODE]     — WolframAlphaModeIntentHandler
+[CACHE]         — hit/miss de caché S3
+[TOTAL]         — tiempo total del request
+```
+
+## Estructura de sessionAttributes (matemática)
+
+```js
+lastKeyword          // "derivative of x^2 * sin(x)"
+lastStepByStepData   // [{input, podId, isPrimary}] — para botón SBS
+lastImagenes         // pods normales de Wolfram (hasta 12)
+lastImagenesPasos    // [] — siempre vacío (lazy loading)
+lastDisplayTop       // título APL formateado
+lastDisplayBottom    // resumen del proceso (Claude)
+canStepByStep        // true si Wolfram detectó podstates
+wolframData          // inyectado por botón APL antes de WolframAlphaModeIntentHandler
+currentWolframStep   // índice de paginación SBS
+```

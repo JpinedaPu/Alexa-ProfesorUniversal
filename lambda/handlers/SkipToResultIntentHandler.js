@@ -44,14 +44,17 @@ const SkipToResultIntentHandler = {
             allSteps = cachedSession.wolframResponse.allSteps || [];
             imagenesNormales = cachedSession.wolframResponse.imagenesNormales || [];
             originalQuestion = cachedSession.originalQuestion;
+            console.log(`[SKIP-TO-RESULT] Fuente: DynamoDB | steps=${allSteps.length} | normales=${imagenesNormales.length}`);
         } else if (sessionAttributes.wolframData) {
             allSteps = sessionAttributes.wolframData.imagenes || [];
             imagenesNormales = sessionAttributes.wolframData.imagenesNormales || [];
             originalQuestion = sessionAttributes.wolframData.keyword || '';
+            console.log(`[SKIP-TO-RESULT] Fuente: session | steps=${allSteps.length} | normales=${imagenesNormales.length}`);
         }
         
         // Priorizar buscar en imagenesNormales (primera llamada)
         if (imagenesNormales.length === 0 && allSteps.length === 0) {
+            console.log('[SKIP-TO-RESULT] ❌ Sin datos — ni caché ni sesión activa');
             return handlerInput.responseBuilder
                 .speak('No hay una solución paso a paso activa. Primero pide resolver algo con "modo wolfram".')
                 .reprompt('¿Qué quieres calcular?')
@@ -139,7 +142,7 @@ Responde SOLO con el JSON, sin texto adicional.`;
                 document: generarAPL(sessionAttributes.darkMode),
                 datasources: {
                     templateData: {
-                        titulo: `Resultado Final: ${originalQuestion}`,
+                        titulo: `Resultado Final`,
                         textoSuperior: sintesisResult.displayTop || 'Resultado',
                         textoInferior: sintesisResult.displayBottom || '',
                         imagenes: [resultPod],

@@ -16,7 +16,7 @@ Las vulnerabilidades de seguridad deben reportarse de forma privada para protege
 
 ### 📧 Cómo Reportar
 
-1. **Email:** Envía un correo a [tu-email] con:
+1. **Email:** Envía un correo a través de [GitHub Security Advisory](https://github.com/JpinedaPu/AlexaProfesorUniversal/security/advisories/new) con:
    - Descripción detallada de la vulnerabilidad
    - Pasos para reproducir
    - Impacto potencial

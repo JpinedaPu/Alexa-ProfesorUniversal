@@ -15,6 +15,7 @@ function formatearTituloMatematico(keyword) {
   if (!keyword) return keyword;
   let t = keyword
     .replace(/\bintegrate\b/gi, '∫')
+    .replace(/\bintegral\s+of\b/gi, '∫')
     .replace(/\bderivative of\b/gi, "d/dx")
     .replace(/\bderivative\b/gi, "d/dx")
     .replace(/\blimit of\b/gi, 'lím')
@@ -67,68 +68,96 @@ function clasificarProblemaMatematico(pregunta) {
   return 'otro';
 }
 
+const { PERFORMANCE } = require('../config/constants');
+
 /**
  * Ejecuta la ruta matemática completa
  * @param {string} pregunta - Pregunta matemática del usuario
  * @param {string} keyword - Keyword extraído
+ * @param {number} startTime
+ * @param {Array} historial - Historial de conversación para contexto
  * @returns {Promise<Object>} Resultado con pasos matemáticos
  */
-async function ejecutarRutaMatematica(pregunta, keyword, startTime = Date.now()) {
+async function ejecutarRutaMatematica(pregunta, keyword, startTime = Date.now(), historial = []) {
   console.log('[MATH-ROUTE] Iniciando ruta matemática');
 
   const tipo = clasificarProblemaMatematico(pregunta);
   console.log(`[MATH-ROUTE] Tipo detectado: ${tipo}`);
 
-  const elapsed = Date.now() - startTime;
-  // Budget total para las 2 llamadas Wolfram
-  const wolframBudget = Math.max(3000, 5500 - elapsed);
+  const DEADLINE = startTime + PERFORMANCE.GLOBAL_DEADLINE_MS; // usa constante global
 
-  // FASE 1: Llamada normal a Wolfram (sin SBS) — solo para obtener texto + imágenes normales
-  // Timeout agresivo: máximo 2500ms para dejar tiempo a Claude y SBS
-  const FASE1_TIMEOUT = Math.min(2500, wolframBudget - 1000);
-  const wolframFase1 = await consultarWolfram(keyword, null, { isStepByStep: false, timeoutMs: FASE1_TIMEOUT });
+  // FASE 1: Wolfram CON detección SBS — obtiene texto + imágenes normales + podstates
+  // Timeout: 4000ms para consultas matemáticas complejas
+  const FASE1_TIMEOUT = Math.min(4000, DEADLINE - Date.now() - 3500);
+  if (FASE1_TIMEOUT < 2000) {
+    console.log(`[MATH-ROUTE] Sin tiempo para Wolfram | elapsed=${Date.now() - startTime}ms | FASE1_TIMEOUT=${FASE1_TIMEOUT}ms | fallback a ruta normal`);
+    return null;
+  }
+
+  const promptMath = `Eres el "Profesor Universal IA". El usuario preguntó: "${pregunta}".
+Responde SOLO con JSON válido:
+{"speech": "...", "displayBottom": "...", "keyword": "${keyword}"}
+
+- "speech": explica el resultado en español, tono didáctico y entusiasta. Máximo 3 frases. Sin símbolos unicode (use palabras: "al cuadrado", "más", etc.).
+- "displayBottom": resumen del PROCESO matemático para la pantalla (diferente al speech). Ej: "Regla del producto: (f·g)' = f'·g + f·g'. Resultado: 2x·sen(x) + x²·cos(x)". Máximo 150 caracteres.
+- "keyword": el concepto matemático principal en inglés.
+Sin texto fuera del JSON.`;
+
+  const wolframFase1 = await consultarWolfram(keyword, null, { 
+    isStepByStep: true, 
+    detectOnly: true,  // Solo detectar podstates, NO hacer llamada 2
+    timeoutMs: FASE1_TIMEOUT 
+  });
 
   if (!wolframFase1 || wolframFase1.imagenes.length === 0) {
     console.log('[MATH-ROUTE] Wolfram fase1 sin resultados, fallback a ruta normal');
-    return null;
+    return { fallback: true, wolframFailed: true };
   }
 
   const textoResultado = wolframFase1.texto || wolframFase1.textoResult || '';
   const elapsedFase1 = Date.now() - startTime;
   console.log(`[MATH-ROUTE] Wolfram fase1 OK: ${wolframFase1.imagenes.length} imgs | canSBS=${wolframFase1.canStepByStep} | T+${elapsedFase1}ms`);
 
-  // FASE 2: Claude + Wolfram SBS EN PARALELO
-  // Claude arranca con el texto de fase1 — no necesita esperar los pasos
-  // Wolfram SBS busca los pasos para el botón APL
-  const claudeBudget = Math.max(2000, 7600 - elapsedFase1 - 200);
-  const sbsBudget    = Math.max(1500, 7600 - elapsedFase1 - claudeBudget - 100);
-
-  const claudePromise = consultarClaude(
-    pregunta, textoResultado, '', '', keyword, [],
-    { timeout: claudeBudget }
+  // Una sola llamada a Claude con el texto de Wolfram ya disponible
+  const claudeBudget = Math.max(1500, DEADLINE - Date.now() - 50);
+  console.log(`[MATH-ROUTE] claudeBudget=${claudeBudget}ms | T+${elapsedFase1}ms`);
+  const claudeResponse = await consultarClaude(
+    pregunta, textoResultado, '', '', keyword, historial.slice(-4),
+    { timeout: claudeBudget, prompt: promptMath }
   );
 
-  // Solo lanzar SBS si Wolfram detectó podstate en fase1
-  const sbsPromise = wolframFase1.canStepByStep
-    ? consultarWolfram(keyword, null, { isStepByStep: true, timeoutMs: sbsBudget + FASE1_TIMEOUT })
-    : Promise.resolve(null);
-
-  const [claudeResponse, wolframSBS] = await Promise.all([claudePromise, sbsPromise]);
-
-  const imagenesPasos  = wolframSBS?.canStepByStep ? (wolframSBS.imagenes || []) : [];
+  // NO hacer llamada SBS aquí — se hace cuando usuario activa modo wolfram (botón APL o voz)
+  // stepByStepData contiene los podstates necesarios para la llamada 2 de wolfram.js
+  const imagenesPasos  = [];  // Se llenan en WolframAlphaModeIntentHandler
+  const stepByStepData = wolframFase1.stepByStepData || [];
   const imagenesVista  = wolframFase1.imagenes;
   const tituloAPL      = formatearTituloMatematico(keyword);
   const speech         = claudeResponse?.speech || 'Aquí está la solución matemática.';
   const displayBottom  = claudeResponse?.displayBottom || claudeResponse?.displayTop || '';
+  console.log(`[MATH-ROUTE] Claude OK | speech=${speech.length}ch | canSBS=${wolframFase1.canStepByStep} | T+${Date.now() - startTime}ms`);
 
   console.log(`[MATH-ROUTE] Completada | pasos=${imagenesPasos.length} canSBS=${wolframFase1.canStepByStep} | T+${Date.now() - startTime}ms`);
 
   return {
     speech,
     displayTop: tituloAPL,
+    // textoSuperior APL = resultado concreto de Wolfram (no el título)
+    // Se extrae del texto de Wolfram: buscar la línea "Derivative: ..." o "Result: ..."
+    displayTopAPL: (() => {
+      if (!textoResultado) return tituloAPL;
+      // Buscar resultado directo en el texto de Wolfram
+      const lines = textoResultado.split('.').map(l => l.trim()).filter(l => l.length > 3);
+      const resultLine = lines.find(l =>
+        /^(Derivative|Result|Integral|Solution|Roots?|Answer):/i.test(l)
+      );
+      if (resultLine) return resultLine.replace(/^[^:]+:\s*/i, '').trim().substring(0, 120);
+      // Fallback: primera línea sustancial del texto
+      return lines[0] ? lines[0].substring(0, 120) : tituloAPL;
+    })(),
     displayBottom,
     imagenes: imagenesVista,
     imagenesPasos,
+    stepByStepData,
     canStepByStep: wolframFase1.canStepByStep,
     tipo,
     keyword,

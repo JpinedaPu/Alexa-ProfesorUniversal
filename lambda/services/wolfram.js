@@ -83,14 +83,15 @@ async function consultarWolfram(keyword, userLocation = null, options = {}) {
     if (options.isStepByStep) {
         // Presupuesto total: 4500ms para dejar ~3s a Claude
         const BUDGET_TOTAL = options.timeoutMs || 4500;
-        const TIMEOUT_CALL1 = Math.min(3000, BUDGET_TOTAL - 1000);
+        const TIMEOUT_CALL1 = Math.min(4000, BUDGET_TOTAL - 1000);
 
-        console.log(`[WOLFRAM] Modo step-by-step | budget: ${BUDGET_TOTAL}ms`);
+        console.log(`[WOLFRAM] Modo step-by-step | budget: ${BUDGET_TOTAL}ms | detectOnly: ${!!options.detectOnly}`);
 
         // LLAMADA 1 con timeout ajustado
+        // El req interno tiene su propio timeout — el Promise.race es solo un guardia externo
         const firstResult = await Promise.race([
             consultarWolframInternal(keyword, userLocation, null, startTime, null, TIMEOUT_CALL1),
-            new Promise(r => setTimeout(() => r({ imagenes: [], texto: '', canStepByStep: false, stepByStepData: [] }), TIMEOUT_CALL1))
+            new Promise(r => setTimeout(() => r({ imagenes: [], texto: '', canStepByStep: false, stepByStepData: [] }), TIMEOUT_CALL1 + 200))
         ]);
 
         const elapsed1 = Date.now() - startTime;
@@ -98,6 +99,19 @@ async function consultarWolfram(keyword, userLocation = null, options = {}) {
         if (!firstResult.stepByStepData || firstResult.stepByStepData.length === 0) {
             console.log(`[WOLFRAM] Sin podstate | T+${elapsed1}ms | devolviendo resultado normal`);
             return firstResult;
+        }
+
+        // Si detectOnly=true, devolver solo la detección sin hacer llamada 2
+        if (options.detectOnly) {
+            console.log(`[WOLFRAM] Modo detectOnly | T+${elapsed1}ms | devolviendo ${firstResult.imagenes.length} imgs normales + podstates`);
+            return {
+                imagenes: firstResult.imagenes,
+                imagenesNormales: firstResult.imagenes,
+                texto: firstResult.texto,
+                textoResult: firstResult.textoResult,
+                canStepByStep: true,
+                stepByStepData: firstResult.stepByStepData
+            };
         }
 
         // Elegir el mejor podstate para la llamada 2:
@@ -141,8 +155,8 @@ async function consultarWolfram(keyword, userLocation = null, options = {}) {
         };
     }
     
-    // Llamada normal (sin step-by-step)
-    return consultarWolframInternal(keyword, userLocation, null, startTime);
+    // Llamada normal (sin step-by-step) — pasar timeoutMs para respetar el budget de mathRoute
+    return consultarWolframInternal(keyword, userLocation, null, startTime, null, options.timeoutMs || 5000);
 }
 
 /**
@@ -163,8 +177,11 @@ function consultarWolframInternal(keyword, userLocation, podstate, startTime, ta
             ? podstate.map(ps => `&podstate=${encodeURIComponent(ps)}`).join('')
             : (podstate ? `&podstate=${encodeURIComponent(podstate)}` : '');
         // scantimeout/podtimeout ajustados al presupuesto disponible
-        // Para SBS (podstate presente) necesitamos al menos 3s internos
-        const wScan = podstate ? Math.min(4, Math.max(2, Math.floor(timeoutMs / 1000) - 1)) : Math.min(2, Math.floor(timeoutMs / 2000));
+        // Para consultas matemáticas complejas necesitamos al menos 2-3s internos
+        // Para SBS (podstate presente) necesitamos al menos 3-4s internos
+        const wScan = podstate 
+            ? Math.min(5, Math.max(3, Math.floor(timeoutMs / 1000) - 1))  // SBS: 3-5s
+            : Math.min(3, Math.max(2, Math.floor(timeoutMs / 1500)));     // Normal: 2-3s
         const url = `https://api.wolframalpha.com/v2/query?appid=${WOLFRAM_APP_ID}&input=${q}&output=json&format=image,plaintext&mag=2&width=800&units=metric${locationParam}${podstateParam}&scantimeout=${wScan}&podtimeout=${wScan}&formattimeout=1.5&parsetimeout=1.5`;
 
         const httpsOptions = {
@@ -285,12 +302,16 @@ function consultarWolframInternal(keyword, userLocation, podstate, startTime, ta
             });
         });
         req.on('timeout', () => {
-            console.log(`${logPrefix} ❌ ERR_TIMEOUT | T+${Date.now() - startTime}ms | Límite: 5500ms`);
+            console.log(`${logPrefix} ❌ ERR_TIMEOUT | T+${Date.now() - startTime}ms | Límite: ${timeoutMs}ms`);
+            req.socket?.destroy();
             req.destroy();
             resolve({ imagenes: [], texto: "", canStepByStep: false, stepByStepInputs: [] });
         });
         req.on('error', (e) => {
-            console.log(`${logPrefix} ❌ ERR_NET | T+${Date.now() - startTime}ms | ${e.message}`);
+            // Ignorar ECONNRESET/socket hang up causado por el destroy() del timeout handler
+            if (e.message !== 'socket hang up' && e.code !== 'ECONNRESET') {
+                console.log(`${logPrefix} ❌ ERR_NET | T+${Date.now() - startTime}ms | ${e.message}`);
+            }
             resolve({ imagenes: [], texto: "", canStepByStep: false, stepByStepInputs: [] });
         });
     });

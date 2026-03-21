@@ -30,5 +30,5 @@ module.exports = {
     // Timeouts para procesamiento de lenguaje
     KEYWORD_EXTRACTION_TIMEOUT: 1700,   // Extracción de keyword principal
     RECONSTRUCTION_TIMEOUT: 1200,       // Reconstrucción de preguntas ambiguas
-    IMAGES_EXTRA_TIMEOUT: 5500          // Búsqueda de imágenes complementarias
+    IMAGES_EXTRA_TIMEOUT: 2000          // Búsqueda de imágenes complementarias (reducido — no bloquear Promise.all)
 };

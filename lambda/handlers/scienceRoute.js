@@ -44,63 +44,73 @@ function clasificarPreguntaCientifica(pregunta) {
   return 'otro';
 }
 
+const { PERFORMANCE } = require('../config/constants');
+
 /**
  * Ejecuta la ruta científica completa
  * @param {string} pregunta
  * @param {string} keyword
+ * @param {number} startTime
+ * @param {Array} historial
  * @returns {Promise<Object>}
  */
-async function ejecutarRutaCientifica(pregunta, keyword, startTime = Date.now()) {
+async function ejecutarRutaCientifica(pregunta, keyword, startTime = Date.now(), historial = []) {
   console.log('[SCIENCE-ROUTE] Iniciando ruta científica');
   
   const tipo = clasificarPreguntaCientifica(pregunta);
   console.log(`[SCIENCE-ROUTE] Tipo detectado: ${tipo}`);
   
-  // 1. Consultas paralelas — Wolfram con timeout reducido para dejar margen a Claude
+  // 1. Consultas paralelas — Wolfram con timeout dinámico para dejar margen a Claude
   const esEspacial = tipo === 'astronomia';
+  const DEADLINE = startTime + PERFORMANCE.GLOBAL_DEADLINE_MS;
+  const wolframBudget = Math.max(1500, Math.min(2500, DEADLINE - Date.now() - 3800));
   const [wolfram, wiki, imagenesExtra] = await Promise.all([
-    consultarWolfram(keyword, null, { timeoutMs: 2500 }),
+    consultarWolfram(keyword, null, { timeoutMs: wolframBudget }),
     consultarWikipedia(keyword),
     buscarImagenesExtra(keyword, esEspacial ? 15 : 8)
   ]);
   
-  console.log(`[SCIENCE-ROUTE] Wolfram: ${wolfram.imagenes.length} imgs | Wiki: ${wiki.texto.length}ch | Extra: ${imagenesExtra.length} imgs | tipo: ${tipo}`);
+  console.log(`[SCIENCE-ROUTE] Wolfram: ${wolfram.imagenes.length} imgs | Wiki: ${wiki.texto.length}ch | Extra: ${imagenesExtra.length} imgs | tipo: ${tipo} | wolframBudget: ${wolframBudget}ms`);
   
-  // 2. Síntesis con Claude — mínimo 3500ms garantizados
+  // 2. Síntesis con Claude — tiempo restante real menos 200ms de margen
   const elapsed = Date.now() - startTime;
-  const claudeBudget = Math.max(3500, 7600 - elapsed - 200);
+  const claudeBudget = Math.max(2000, Math.min(3800, PERFORMANCE.GLOBAL_DEADLINE_MS - elapsed - 200));
+  console.log(`[SCIENCE-ROUTE] claudeBudget=${claudeBudget}ms | elapsed=${elapsed}ms`);
   const resultadoClaude = await consultarClaude(
     pregunta,
     wolfram.texto || '',
     wiki.texto || '',
     '',
     keyword,
-    [],
+    historial.slice(-4),
     { timeout: claudeBudget }
   );
   
   const speech = resultadoClaude.speech || 'Aquí está la información científica que buscabas.';
+  const fuenteNASA = imagenesExtra.some(i => i.fuente === 'NASA');
+  console.log(`[SCIENCE-ROUTE] Claude OK | speech=${speech.length}ch | fuenteNASA=${fuenteNASA} | T+${Date.now() - startTime}ms`);
   
-  // 3. Combinar imágenes: Wolfram primero, luego NASA/Wikimedia
-  const todasImagenes = [
-    ...wolfram.imagenes,
-    ...imagenesExtra.map(img => ({
-      titulo: img.titulo || img.fuente || 'Ciencia',
-      url: img.url,
-      width: img.width || 800,
-      height: img.height || 600
-    }))
-  ].slice(0, 20);
+  // Separar: Wolfram en imagenes (slot principal), NASA/Wikimedia en imagenesExtraPool
+  const imagenesWolfram = wolfram.imagenes;
+  const imagenesExtraPool = imagenesExtra.map(img => ({
+    titulo: img.titulo || img.fuente || 'Ciencia',
+    url: img.url,
+    width: img.width || 800,
+    height: img.height || 600
+  }));
 
   return {
-    speech: speech || 'Aquí está la información científica que buscabas.',
-    displayTop: `Ciencia: ${keyword}`,
-    displayBottom: wiki.texto ? wiki.texto.substring(0, 300) : (wolfram.texto || '').substring(0, 300),
-    imagenes: todasImagenes,
+    speech,
+    displayTop: resultadoClaude.displayTop || keyword,
+    displayBottom: resultadoClaude.displayBottom || (wiki.texto ? wiki.texto.substring(0, 300) : (wolfram.texto || '').substring(0, 300)),
+    imagenes: imagenesWolfram,
+    imagenesExtraPool,
+    imagenesExtraIniciales: imagenesExtraPool.slice(0, 6),
+    hayMasImagenes: imagenesExtraPool.length > 6,
     canStepByStep: false,
-    tipo,
-    keyword,
-    fuenteNASA: imagenesExtra.some(i => i.fuente === 'NASA')
+    fuenteNASA,
+    fuenteWolfram: imagenesWolfram.length > 0 || (wolfram.texto || '').length > 5,
+    fuenteWikipedia: (wiki.texto || '').length > 10
   };
 }
 

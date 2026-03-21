@@ -52,7 +52,7 @@ function analizarCacheabilidad(pregunta, options = {}) {
         }
     }
 
-    if (/[-+* /^=0-9x-z]/.test(preguntaLower)) {
+    if (/[-+*\/^=0-9x-z]/.test(preguntaLower)) {
         return { cacheable: false, cacheKey: null, reason: 'Contiene números o variables específicas' };
     }
 
