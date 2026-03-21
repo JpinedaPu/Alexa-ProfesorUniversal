@@ -1,4 +1,4 @@
-# ── Dependencias ─────────────────────────────────────────────────────────────
+﻿# ── Dependencias ─────────────────────────────────────────────────────────────
 node_modules/
 lambda/node_modules/
 
@@ -24,7 +24,20 @@ w2.json
 out-*.json
 response-*.json
 test-event-*.json
-test-events/results/
+test-events/
+test-*.json
+test-*.js
+
+# ── Documentación temporal ───────────────────────────────────────────────────
+*-ANALISIS.md
+LIMPIEZA-*.md
+PROBLEMA-*.md
+DEPLOY-*.md
+RESUMEN-*.md
+ESTADO-*.md
+ARCHIVOS-*.md
+README-LOCAL.md
+lambda/README-LOCAL.md
 
 # ── OS / IDE ─────────────────────────────────────────────────────────────────
 .DS_Store
